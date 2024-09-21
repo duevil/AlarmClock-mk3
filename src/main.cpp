@@ -1,8 +1,10 @@
 #include "alarm_clock.h"
 
+NVS nvs({});
+
 void setup() {
     log_setup();
-    delay(100);
+    nvs.setup();
 
     esp_log_set_vprintf(&log_vprintf);
 }

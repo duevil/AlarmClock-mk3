@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "log.h"
+#include "NVS.hpp"
 
 int log_vprintf(const char *, va_list);
 
