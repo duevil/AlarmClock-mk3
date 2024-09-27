@@ -2,8 +2,12 @@
 #define ALARM_CLOCK_H
 
 #include <Arduino.h>
+#include <SD.h>
+#include "globals.h"
+#include "pinmap.h"
 #include "log.h"
-#include "NVS.hpp"
+#include "lights.h"
+#include "nvs.h"
 
 int log_vprintf(const char *, va_list);
 
