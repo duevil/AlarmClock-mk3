@@ -1,13 +1,13 @@
 #ifndef NVS_H
 #define NVS_H
 
-#include <Preferences.h>
+#include "alarm_clock.h"
 
 namespace nvs {
     //! Template wrapper for the Preferences get-function.
     template<typename T> T get(Preferences &prefs, const char *key, T);
     //! Template wrapper for the Preferences put-function.
-    template<typename T> void put(Preferences &, const char *, const T &);
+    template<typename T> void put(Preferences &, const char *, const T &, bool = true);
 
     //! Template variable that is true if the type is supported by the Preferences API.
     template<typename T> requires std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t> ||
@@ -88,6 +88,10 @@ namespace nvs {
 }
 
 template<typename T> T nvs::get(Preferences &prefs, const char *key, T val) {
+    if (!prefs.isKey(key)) {
+        put(prefs, key, val, false);
+        return val;
+    } // Initialize the key if it doesn't exist
     /**/ if constexpr (std::is_same_v<T, int8_t>) val = prefs.getChar(key, val);
     else if constexpr (std::is_same_v<T, uint8_t>) val = prefs.getUChar(key, val);
     else if constexpr (std::is_same_v<T, int16_t>) val = prefs.getShort(key, val);
@@ -103,8 +107,8 @@ template<typename T> T nvs::get(Preferences &prefs, const char *key, T val) {
     return val;
 }
 
-template<typename T> void nvs::put(Preferences &prefs, const char *key, const T &var) {
-    if (var == nvs::get(prefs, key, var)) { return; }
+template<typename T> void nvs::put(Preferences &prefs, const char *key, const T &var, bool check) {
+    if (check && var == nvs::get(prefs, key, var)) { return; }
     /**/ if constexpr (std::is_same_v<T, int8_t>) prefs.putChar(key, var);
     else if constexpr (std::is_same_v<T, uint8_t>) prefs.putUChar(key, var);
     else if constexpr (std::is_same_v<T, int16_t>) prefs.putShort(key, var);

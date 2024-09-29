@@ -1,7 +1,9 @@
-#include <Ticker.h>
 #include "lights.h"
 
-constexpr auto CHANNEL = 0;
+// TODO:
+//  Add lights value state instead of reading it from the LEDC peripheral
+//  and use the value to implement the increment and decrement functions
+
 constexpr auto FREQ = 5000;
 constexpr auto RESOLUTION = 10;
 constexpr auto FADE_TIME = 750;
