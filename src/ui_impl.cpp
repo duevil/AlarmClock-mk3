@@ -5,7 +5,8 @@
 
 static constexpr ui_bp_t uiBootProcessList[] = {
         {5,   "Booting...",      nullptr},
-        {95,  "lights::setup()", lights::setup},
+        {10,  "lights::setup()", lights::setup},
+        {20,  "RTC setup",       rtc::setup},
         {100, "Done",            nullptr},
 };
 

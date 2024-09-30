@@ -2,11 +2,19 @@
 
 nvs::Handler nvsHandler{
         nvs::Var{"log_file_index", global::logFileIndex},
-        nvs::Var{"light_duration", global::lightDuration}
+        nvs::Var{"light_duration", global::lightDuration},
+        nvs::Var{"timezone", global::timeZone},
 };
 
 void setup() {
     log_setup();
+
+    // TODO: Change this to use a WiFi manager
+    WiFi.begin(WIFI_SSID, WIFI_PASS, 6);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(250);
+    }
+
     nvsHandler.setup();
     global::sdAvailable = SD.begin();
     if (global::sdAvailable) log_i("SD card initialized");
