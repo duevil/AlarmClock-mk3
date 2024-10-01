@@ -2,7 +2,6 @@
 
 void setup() {
     log_setup(&log_vprintf);
-    nvsHandler.setup();
 
 #ifdef WOKWI // Wokwi simulation uses pre-defined and fixed Wi-Fi credentials
     WiFi.begin(WIFI_SSID, WIFI_PASS, 6);
@@ -41,9 +40,6 @@ void loop() {
             break;
         default:
             break;
-    }
-    if (!ui::isFormActive()) {
-        nvsHandler.store_all();
     }
 
 #ifdef WOKWI

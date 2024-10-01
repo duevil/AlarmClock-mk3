@@ -6,6 +6,7 @@
 
 static constexpr ui_bp_t uiBootProcessList[] = {
         {5, "Booting...", nullptr},
+        {8, "NVS setup", NVS::setup},
         {10, "SD setup", [] {
             global::sdAvailable = SD.begin();
             if (global::sdAvailable) log_i("SD card initialized");

@@ -52,8 +52,8 @@ String weather::dataString() {
 
 static String getURL() {
     auto url = String{"http://api.openweathermap.org/data/2.5/weather?units=metric&"}
-               + "lat=" + String{global::latitude, 4} + "&"
-               + "lon=" + String{global::longitude, 4} + "&"
+               + "lat=" + String{*global::latitude, 4} + "&"
+               + "lon=" + String{*global::longitude, 4} + "&"
                + "appid=" + OPEN_WEATHER_API_KEY;
     log_d("URL: %s", url.c_str());
     return url;

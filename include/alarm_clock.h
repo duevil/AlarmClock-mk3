@@ -25,7 +25,7 @@
 #include "secrets.h"
 #include "log.h"
 #include "lights.h"
-#include "nvs.h"
+#include "NVS.hpp"
 #include "ui_boot_process.h"
 #include "fonts.h"
 #include "ui.h"
@@ -52,11 +52,11 @@ namespace pins {
 
 namespace global {
     inline bool sdAvailable{false}; //!< True if the SD card is available
-    inline uint8_t logFileIndex{}; //!< Index of the current log file
-    inline uint8_t lightDuration{45}; //!< Duration for the lights to turn off after in minutes
-    inline float latitude{51.83119723675312}; //!< Latitude of the device
-    inline float longitude{10.787628924924052}; //!< Longitude of the device
     inline DateTime now{}; //!< Current date and time
+    inline NVSValue<uint8_t> logFileIndex{"log_file_index", 0}; //!< Index of the current log file
+    inline NVSValue<uint8_t> lightDuration{"light_duration", 45}; //!< Duration for the lights to turn off after in minutes
+    inline NVSValue latitude{"latitude", DEFAULT_LATITUDE}; //!< Latitude of the device
+    inline NVSValue longitude{"longitude", DEFAULT_LONGITUDE}; //!< Longitude of the device
 }
 
 int log_vprintf(const char *, va_list);
@@ -64,12 +64,5 @@ int log_vprintf(const char *, va_list);
 extern const std::span<ui_bp_t> UI_BOOT_PROCESS_LIST;
 extern const std::span<muif_t> UI_FUNCTION_LIST;
 extern fds_t *UI_FORM_DEFINITION;
-
-inline nvs::Handler nvsHandler{
-        nvs::Var{"log_file_index", global::logFileIndex},
-        nvs::Var{"light_duration", global::lightDuration},
-        nvs::Var{"latitude", global::latitude},
-        nvs::Var{"longitude", global::longitude},
-}; //!< Handler for the non-volatile storage
 
 #endif //ALARM_CLOCK_H

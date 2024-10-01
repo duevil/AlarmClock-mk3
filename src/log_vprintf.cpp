@@ -13,12 +13,12 @@ static void rotate_log_file() {
     if (log_file) {
         // We already opened a log file; close it and move to the next
         log_file.close();
-        global::logFileIndex = (global::logFileIndex + 1) % MAX_FILE_COUNT;
+        global::logFileIndex = (*global::logFileIndex + 1) % MAX_FILE_COUNT;
     }
     if (!SD.exists("/logs")) {
         SD.mkdir("/logs");
     }
-    snprintf(filename, sizeof(filename), "/logs/%02d.log", global::logFileIndex);
+    snprintf(filename, sizeof(filename), "/logs/%02d.log", *global::logFileIndex);
     log_file = SD.open(filename, FILE_WRITE);
     if (log_file && log_file.size() > MAX_LOG_FILE_SIZE) {
         // The newly opened log file is already too large; truncate it by deleting and re-creating it

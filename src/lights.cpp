@@ -32,7 +32,7 @@ static void timer_isr() { lights::fadeDown(); }
 
 static void start_timer() {
     if (auto current = ledcRead(pins::LIGHTS); current == 0) return;
-    auto_off_timer.once(static_cast<float>((global::lightDuration * 60)), timer_isr);
+    auto_off_timer.once(static_cast<float>((*global::lightDuration * 60)), timer_isr);
 }
 
 static void fade_isr() {
