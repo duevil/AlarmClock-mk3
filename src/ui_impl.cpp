@@ -24,6 +24,7 @@ static constexpr ui_bp_t uiBootProcessList[] = {
         }},
 #endif
         {50, "Weather", weather::setup},
+        {60, "Matrix", matrix::setup},
         {100, "Done", nullptr},
 };
 

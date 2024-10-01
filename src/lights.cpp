@@ -43,7 +43,7 @@ static void fade_isr() {
 /*!
  * @brief Setup the lights PWM channel
  */
-void lights::setup() {ledcAttach(pins::LIGHTS, FREQ, RESOLUTION);}
+void lights::setup() { ledcAttach(pins::LIGHTS, FREQ, RESOLUTION); }
 
 /*!
  * @brief Get the current lights brightness

@@ -85,6 +85,13 @@
       "left": 0.8,
       "rotate": 90,
       "attrs": { "initTime": "0" }
+    },
+    {
+      "type": "wokwi-max7219-matrix",
+      "id": "matrix1",
+      "top": -287.4,
+      "left": -213.36,
+      "attrs": { "chain": "4", "layout": "fc16" }
     }
   ],
   "connections": [
@@ -118,7 +125,12 @@
     [ "rtc1:GND", "esp:GND.1", "black", [ "v-38.4", "h-67.2", "v-96" ] ],
     [ "rtc1:5V", "esp:5V", "red", [ "v-48", "h-47.6", "v-38.4" ] ],
     [ "rtc1:SDA", "oled1:SDA", "violet", [ "v-28.8", "h0.3" ] ],
-    [ "rtc1:SCL", "oled1:SCL", "violet", [ "v-19.2", "h0.2" ] ]
+    [ "rtc1:SCL", "oled1:SCL", "violet", [ "v-19.2", "h0.2" ] ],
+    [ "esp:18", "matrix1:CLK", "gray", [ "h57.6", "v-163.2" ] ],
+    [ "esp:GND.2", "matrix1:GND", "black", [ "h9.6", "v-115.2" ] ],
+    [ "esp:5V", "matrix1:V+", "red", [ "h-9.45", "v-230.4", "h105.6", "v-67.2" ] ],
+    [ "esp:23", "matrix1:DIN", "gray", [ "h19.2", "v-124.8" ] ],
+    [ "esp:27", "matrix1:CS", "purple", [ "h-19.05", "v-115.2", "h153.6", "v-76.8" ] ]
   ],
   "dependencies": {}
 }

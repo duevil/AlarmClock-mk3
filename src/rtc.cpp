@@ -14,7 +14,6 @@ using RTC_TYPE = RTC_DS3231;
 using RTC_TYPE = RTC_DS1307;
 #endif
 static RTC_TYPE rtcObj{};
-static DateTime nowObj{};
 static bool rtcAvailable = false;
 static Ticker updateNowTimer;
 static Ticker updateInternetRTCTimer;
@@ -34,7 +33,7 @@ void rtc::setup() {
 #ifndef WOKWI
         if (!rtcObj.lostPower()) {
 #else
-            if (!rtcObj.isrunning()) {
+        if (!rtcObj.isrunning()) {
 #endif
             log_e("RTC is NOT running!");
             rtcObj.adjust(DateTime(__DATE__, __TIME__));
@@ -57,12 +56,6 @@ void rtc::setup() {
     updateInternetRTC();
 }
 
-/**
- * @brief Get the current time.
- * @return The current time as a DateTime object.
- */
-const DateTime &rtc::now() { return nowObj; }
-
 static DateTime time_tToDateTime(time_t time) {
     struct tm tm{};
     localtime_r(&time, &tm);
@@ -84,8 +77,8 @@ static void ntpCallback(struct timeval *tv) {
 }
 
 static void updateNow() {
-    nowObj = time_tToDateTime(time(nullptr));
-    log_v("Updated now: %s", nowObj.timestamp().c_str());
+    global::now = time_tToDateTime(time(nullptr));
+    log_v("Updated now: %s", global::now.timestamp().c_str());
 }
 
 static void updateInternetRTC() {
@@ -113,7 +106,7 @@ static void updateInternetRTC() {
     }
 }
 
-static bool setTimeZone(const char* c_tz, size_t c_len) {
+static bool setTimeZone(const char *c_tz, size_t c_len) {
     // roughly taken from https://github.com/mathieucarbou/MycilaNTP/blob/main/src/MycilaNTP.cpp
 
     auto tz = String(c_tz, c_len);

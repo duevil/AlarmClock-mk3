@@ -5,8 +5,6 @@
 
 namespace rtc {
     void setup();
-    const DateTime &now();
-    void updateTimeZone();
 }
 
 #endif //RTC_H

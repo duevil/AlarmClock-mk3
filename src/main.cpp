@@ -1,12 +1,5 @@
 #include "alarm_clock.h"
 
-nvs::Handler nvsHandler{
-        nvs::Var{"log_file_index", global::logFileIndex},
-        nvs::Var{"light_duration", global::lightDuration},
-        nvs::Var{"latitude", global::latitude},
-        nvs::Var{"longitude", global::longitude},
-};
-
 void setup() {
     log_setup(&log_vprintf);
     nvsHandler.setup();
@@ -52,4 +45,9 @@ void loop() {
     if (!ui::isFormActive()) {
         nvsHandler.store_all();
     }
+
+#ifdef WOKWI
+    // Wokwi simulation needs a small delay to run properly
+    delay(10);
+#endif
 }

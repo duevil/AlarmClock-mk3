@@ -223,9 +223,9 @@ static void handleInputEvent() {
                 log_v("Sending next field");
                 redraw = true;
                 break;
-            // either left or right long press will execute a field search
             case L_L:
             case R_L:
+                // either left or right long press will execute a field search
                 mui.sendSelectWithExecuteOnSelectFieldSearch();
                 log_v("Executing field search");
                 redraw = true;

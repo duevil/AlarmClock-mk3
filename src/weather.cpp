@@ -4,7 +4,7 @@ static inline constexpr const auto TICKER_INTERVAL = 30 * 60; // 30 minutes
 
 static weather::data weatherData;
 static Ticker weatherTicker;
-static const JsonDocument filter = []  {
+static const JsonDocument filter = [] {
     static constexpr auto filter = R"({
         "weather": [{ "description": true }],
         "main": { "temp": true, "feels_like": true },
