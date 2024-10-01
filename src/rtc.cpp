@@ -70,8 +70,15 @@ static DateTime time_tToDateTime(time_t time) {
 }
 
 static void ntpCallback(struct timeval *tv) {
+    auto rtcOld = rtcObj.now();
     rtcObj.adjust(time_tToDateTime(tv->tv_sec));
-    log_i("Time synchronized from NTP: %s", rtcObj.now().timestamp().c_str());
+    auto rtcNew = rtcObj.now();
+    auto diff = (rtcNew - rtcOld).totalseconds();
+    if (abs(diff) > 1) {
+        log_w("RTC adjusted from NTP: %s (%+d seconds)", rtcNew.timestamp().c_str(), diff);
+    } else {
+        log_i("RTC in sync with NTP: %s", rtcNew.timestamp().c_str());
+    }
     // Get the current timezone based on the IP address and update the system timezone
     http_request::get(TIMEZONE_API_URL, setTimeZone);
 }

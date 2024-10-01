@@ -1,6 +1,11 @@
 #ifndef TIMEZONES_H
 #define TIMEZONES_H
 
+/**
+ * @file timezones.h
+ * @brief Timezone database for the ESP32.
+ * @note Source: https://github.com/mathieucarbou/MycilaNTP/blob/main/src/MycilaNTPSpecs.h
+ */
 static constexpr const char TIMEZONE_DB[] = {
         "Africa/Abidjan=GMT0\n"
         "Africa/Accra=GMT0\n"
