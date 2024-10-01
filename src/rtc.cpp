@@ -1,4 +1,12 @@
 #include "rtc.h"
+#include "timezones.h"
+
+static inline constexpr const auto DEFAULT_TZ = "CET-1CEST,M3.5.0,M10.5.0/3";
+static inline constexpr const auto NTP_SERVER_1 = "pool.ntp.org";
+static inline constexpr const auto NTP_SERVER_2 = "time.nist.gov";
+static inline constexpr const auto NTP_SERVER_3 = "time.google.com";
+static inline constexpr const auto TIMEZONE_API_URL = "http://ip-api.com/line/?fields=timezone";
+static inline constexpr const auto NTP_SYNC_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours
 
 #ifndef WOKWI
 using RTC_TYPE = RTC_DS3231;
@@ -11,10 +19,11 @@ static bool rtcAvailable = false;
 static Ticker updateNowTimer;
 static Ticker updateInternetRTCTimer;
 
-static DateTime time_tToDateTime(time_t time);
+static DateTime time_tToDateTime(time_t);
 static void ntpCallback(struct timeval *);
 static void updateNow();
 static void updateInternetRTC();
+static bool setTimeZone(const char *, size_t);
 
 /**
  * @brief Setup the RTC and enable NTP synchronization.
@@ -25,7 +34,7 @@ void rtc::setup() {
 #ifndef WOKWI
         if (!rtcObj.lostPower()) {
 #else
-        if (!rtcObj.isrunning()) {
+            if (!rtcObj.isrunning()) {
 #endif
             log_e("RTC is NOT running!");
             rtcObj.adjust(DateTime(__DATE__, __TIME__));
@@ -38,8 +47,11 @@ void rtc::setup() {
         log_e("Couldn't find RTC");
     }
 
-    configTzTime(global::timeZone.c_str(), "pool.ntp.org", "time.nist.gov", "time.google.com");
-    sntp_set_time_sync_notification_cb(ntpCallback);
+    // Get the current timezone based on the IP address and update the system timezone
+    http_request::get(TIMEZONE_API_URL, setTimeZone);
+    configTzTime(DEFAULT_TZ, NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3);
+    esp_sntp_set_time_sync_notification_cb(ntpCallback);
+    esp_sntp_set_sync_interval(NTP_SYNC_INTERVAL);
     updateNowTimer.attach_ms(100, updateNow);
     updateInternetRTCTimer.attach(60 * 60 * 1000, updateInternetRTC);
     updateInternetRTC();
@@ -50,14 +62,6 @@ void rtc::setup() {
  * @return The current time as a DateTime object.
  */
 const DateTime &rtc::now() { return nowObj; }
-
-/**
- * @brief Update the system timezone using the global::timeZone variable.
- */
-void rtc::updateTimeZone() {
-    setenv("TZ", global::timeZone.c_str(), 1);
-    tzset();
-}
 
 static DateTime time_tToDateTime(time_t time) {
     struct tm tm{};
@@ -75,6 +79,8 @@ static DateTime time_tToDateTime(time_t time) {
 static void ntpCallback(struct timeval *tv) {
     rtcObj.adjust(time_tToDateTime(tv->tv_sec));
     log_i("Time synchronized from NTP: %s", rtcObj.now().timestamp().c_str());
+    // Get the current timezone based on the IP address and update the system timezone
+    http_request::get(TIMEZONE_API_URL, setTimeZone);
 }
 
 static void updateNow() {
@@ -83,6 +89,9 @@ static void updateNow() {
 }
 
 static void updateInternetRTC() {
+    if (!rtcAvailable) {
+        return; // Don't update internal RTC with invalid time
+    }
     auto _now = rtcObj.now();
     struct tm tm{
             _now.second(),
@@ -102,4 +111,38 @@ static void updateInternetRTC() {
             log_e("Could not set time of day");
         }
     }
+}
+
+static bool setTimeZone(const char* c_tz, size_t c_len) {
+    // roughly taken from https://github.com/mathieucarbou/MycilaNTP/blob/main/src/MycilaNTP.cpp
+
+    auto tz = String(c_tz, c_len);
+    tz.trim();
+    auto len = tz.length();
+    if (len == 0) return false;
+
+    auto withEqual = tz + "=";
+    auto found = strstr(TIMEZONE_DB, withEqual.c_str());
+
+    if (found == nullptr) {
+        log_w("Timezone not found: %s", tz.c_str());
+        return false;
+    }
+
+    auto start = found + len + 1;
+    auto _tz = String(start, static_cast<unsigned int>(strstr(start, "\n") - start)).c_str();
+
+    log_i("Set timezone to %s (%s)", tz.c_str(), _tz);
+
+    auto changed = strcmp(_tz, getenv("TZ")) != 0;
+
+    setenv("TZ", _tz, 1);
+    tzset();
+
+    if (changed) {
+        log_i("Timezone changed, restarting NTP sync");
+        esp_sntp_restart();
+    }
+
+    return true;
 }

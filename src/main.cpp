@@ -3,23 +3,18 @@
 nvs::Handler nvsHandler{
         nvs::Var{"log_file_index", global::logFileIndex},
         nvs::Var{"light_duration", global::lightDuration},
-        nvs::Var{"timezone", global::timeZone},
 };
 
 void setup() {
-    log_setup();
+    log_setup(&log_vprintf);
+    nvsHandler.setup();
 
-    // TODO: Change this to use a WiFi manager
+#ifdef WOKWI // Wokwi simulation uses pre-defined and fixed Wi-Fi credentials
     WiFi.begin(WIFI_SSID, WIFI_PASS, 6);
     while (WiFi.status() != WL_CONNECTED) {
         delay(250);
     }
-
-    nvsHandler.setup();
-    global::sdAvailable = SD.begin();
-    if (global::sdAvailable) log_i("SD card initialized");
-    else log_e("SD card initialization failed");
-    esp_log_set_vprintf(&log_vprintf);
+#endif
 
     ui::setup();
     ui::runBootProcess(UI_BOOT_PROCESS_LIST);

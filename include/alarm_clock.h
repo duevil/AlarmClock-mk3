@@ -3,6 +3,8 @@
 
 // std includes
 #include <span>
+#include <sstream>
+#include <unordered_set>
 // Arduino library includes
 #include <Arduino.h>
 #include <Ticker.h>
@@ -15,6 +17,8 @@
 #include <U8g2lib.h>
 #include <MUIU8g2.h>
 #include <RTClib.h>
+#include <ArduinoJson.h>
+#include <AsyncTCP.h>
 // own includes
 #include "secrets.h"
 #include "globals.h"
@@ -25,6 +29,7 @@
 #include "ui_boot_process.h"
 #include "fonts.h"
 #include "ui.h"
+#include "http_request.h"
 #include "rtc.h"
 
 int log_vprintf(const char *, va_list);

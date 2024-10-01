@@ -31,11 +31,15 @@
 #endif
 
 #if defined RELEASE
-#define log_setup() do { esp_log_level_set(ARDUHAL_ESP_LOG_TAG, ESP_LOG_INFO); } while (0)
+#define log_setup(vprintf_func) do { \
+    esp_log_level_set(ARDUHAL_ESP_LOG_TAG, ESP_LOG_INFO); \
+    esp_log_set_vprintf(vprintf_func); \
+} while (0)
 #elif defined DEBUG
-#define log_setup() do { \
-    esp_log_level_set(ARDUHAL_ESP_LOG_TAG, (esp_log_level_t) CORE_DEBUG_LEVEL); \
+#define log_setup(vprintf_func) do { \
     Serial.begin(SERIAL_BAUD_RATE); \
+    esp_log_level_set(ARDUHAL_ESP_LOG_TAG, (esp_log_level_t) CORE_DEBUG_LEVEL); \
+    esp_log_set_vprintf(vprintf_func); \
 } while (0)
 #else
 #define log_setup() do {} while (0)
