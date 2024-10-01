@@ -84,9 +84,9 @@ void ui::setup() {
  */
 void ui::runBootProcess(std::span<ui_bp_t> lpList) {
     for (const auto &lp: lpList) {
-        log_d("Running %s [%d%%]", lp.message, lp.progress);
+        log_i("Running %s [%d%%]", lp.message, lp.progress);
         if (lp.func) lp.func();
-        log_v("Done");
+        log_d("Done");
         drawBootScreen(lp.message, lp.progress);
     }
     u8g2.clearDisplay();

@@ -31,6 +31,7 @@
 #include "ui.h"
 #include "http_request.h"
 #include "rtc.h"
+#include "weather.h"
 
 int log_vprintf(const char *, va_list);
 

@@ -20,6 +20,7 @@ struct UrlParts {
 };
 
 
+static void clearRequest(const RequestPtr &r);
 static void handleConnect(const RequestPtr &r, AsyncClient *client, const char *requestMsg);
 static void handleData(const RequestPtr &r, const void *data, size_t len, const ResponseCallback &cb);
 static void handleError(const RequestPtr &r, AsyncClient *client, int error);
@@ -52,15 +53,18 @@ void http_request::get(const char *url, const ResponseCallback &cb) {
 
     // Set event handlers
     r->client.onConnect([&r, msg](void *, AsyncClient *c) { handleConnect(r, c, msg.c_str()); });
+    r->client.onPoll([&r](void *, AsyncClient *c) { log_d("Polling..."); });
     r->client.onData([&r, cb](void *, AsyncClient *, void *data, size_t len) { handleData(r, data, len, cb); });
     r->client.onError([&r](void *, AsyncClient *c, int error) { handleError(r, c, error); });
     r->client.onTimeout([&r](void *, AsyncClient *, uint32_t time) { handleTimeout(r, time); });
     r->client.onDisconnect([&r](void *, AsyncClient *) { handleDisconnect(r); });
 
     // Start connection to the server
+    r->client.setRxTimeout(5000); // 5 seconds timeout
     auto res = r->client.connect(parts.host.c_str(), parts.port);
     if (!res) {
         log_w("Failed to connect to %s:%d", parts.host.c_str(), parts.port);
+        clearRequest(r);
     } else {
         log_i("Connected to %s:%d", parts.host.c_str(), parts.port);
     }

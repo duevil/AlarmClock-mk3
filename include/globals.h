@@ -7,6 +7,8 @@ namespace global {
     extern bool sdAvailable; //!< True if the SD card is available
     extern uint8_t logFileIndex; //!< Index of the current log file
     extern uint8_t lightDuration; //!< Duration for the lights to turn off after in minutes
+    extern float latitude; //!< Latitude of the device
+    extern float longitude; //!< Longitude of the device
 }
 
 #endif //GLOBALS_H

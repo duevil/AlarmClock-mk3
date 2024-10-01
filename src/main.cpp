@@ -3,6 +3,8 @@
 nvs::Handler nvsHandler{
         nvs::Var{"log_file_index", global::logFileIndex},
         nvs::Var{"light_duration", global::lightDuration},
+        nvs::Var{"latitude", global::latitude},
+        nvs::Var{"longitude", global::longitude},
 };
 
 void setup() {
