@@ -1,20 +1,19 @@
 #include "alarm_clock.h"
-#include "fonts.h"
-#include "timezones.h"
 
 //#region loading processes
 
 static constexpr ui_bp_t uiBootProcessList[] = {
         {5, "Booting...", nullptr},
-        {8, "NVS setup", NVS::setup},
-        {10, "SD setup", [] {
+        {8, "NVS", NVS::setup},
+        {10, "SD Card", [] {
             global::sdAvailable = SD.begin();
             if (global::sdAvailable) log_i("SD card initialized");
             else
             log_e("SD card initialization failed");
         }},
-        {10, "lights::setup()", lights::setup},
-        {20, "RTC setup", rtc::setup},
+        {20, "RTC", rtc::setup},
+        {25, "Sensors", sensors::setup},
+        {30, "Lights", lights::setup},
 #ifndef WOKWI
         {40, "WiFi setup", [] {
             // TODO: Change this to use a WiFi manager
@@ -25,7 +24,9 @@ static constexpr ui_bp_t uiBootProcessList[] = {
         }},
 #endif
         {50, "Weather", weather::setup},
+#ifdef WOKWI //fixme setting up the matrix without a physical hardware will cause the OLED display to stop working
         {60, "Matrix", matrix::setup},
+#endif
         {100, "Done", nullptr},
 };
 

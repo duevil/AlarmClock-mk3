@@ -46,4 +46,6 @@ void loop() {
     // Wokwi simulation needs a small delay to run properly
     delay(10);
 #endif
+
+    sensors::loop();
 }

@@ -9,15 +9,16 @@ constexpr auto RESOLUTION = 10;
 constexpr auto FADE_TIME = 750;
 constexpr auto GAMMA = 2.2;
 
+static Ticker fade_timer;
 static Ticker auto_off_timer;
-static bool fading = false;
+static SemaphoreHandle_t fade_lock;
 
 static uint32_t percent_to_duty(uint8_t percent) {
     auto normalized = _min(percent, 100) / 100.0;
     auto corrected = pow(normalized, GAMMA);
     auto max = (1 << RESOLUTION) - 1;
     log_v("%%: %d, norm: %f, corrected: %f, max: %d", percent, normalized, corrected, max);
-    return static_cast<uint32_t>(corrected * max);
+    return _min(static_cast<uint32_t>(corrected * max), max);
 }
 
 static uint8_t duty_to_percent(uint32_t duty) {
@@ -28,22 +29,29 @@ static uint8_t duty_to_percent(uint32_t duty) {
     return static_cast<uint8_t>(normalized * 100);
 }
 
-static void timer_isr() { lights::fadeDown(); }
-
-static void start_timer() {
-    if (auto current = ledcRead(pins::LIGHTS); current == 0) return;
-    auto_off_timer.once(static_cast<float>((*global::lightDuration * 60)), timer_isr);
+static void timer_callback() {
+    log_i("Auto-off timer expired after %d minutes", *global::lightDuration);
+    lights::fadeDown();
 }
 
-static void fade_isr() {
-    fading = false;
-    start_timer();
+static void fade_callback() {
+    xSemaphoreGive(fade_lock);
+    if (auto current = ledcRead(pins::LIGHTS); current == 0) {
+        auto_off_timer.detach();
+    } else {
+        log_d("Starting auto-off timer for %d minutes", *global::lightDuration);
+        auto_off_timer.once(static_cast<float>((*global::lightDuration * 60)), timer_callback);
+    }
 }
 
 /*!
  * @brief Setup the lights PWM channel
  */
-void lights::setup() { ledcAttach(pins::LIGHTS, FREQ, RESOLUTION); }
+void lights::setup() {
+    ledcAttach(pins::LIGHTS, FREQ, RESOLUTION);
+    fade_lock = xSemaphoreCreateBinaryWithCaps(MALLOC_CAP_SPIRAM);
+    xSemaphoreGive(fade_lock);
+}
 
 /*!
  * @brief Get the current lights brightness
@@ -60,7 +68,7 @@ uint32_t lights::get() {
  * @note If the lights are currently fading, this function will do nothing
  */
 void lights::set(uint8_t percent) {
-    if (fading) {
+    if (xSemaphoreTake(fade_lock, 0) != pdTRUE) {
         log_i("Lights are currently fading, ignoring set request");
         return;
     }
@@ -69,7 +77,7 @@ void lights::set(uint8_t percent) {
     if (duty == 0) {
         auto_off_timer.detach();
     } else {
-        start_timer();
+        fade_callback();
     }
     ledcWrite(pins::LIGHTS, duty);
 }
@@ -80,16 +88,24 @@ void lights::set(uint8_t percent) {
  * @note If the lights are currently fading, this function will do nothing
  */
 void lights::fade(uint8_t percent) {
-    if (fading) {
+    if (xSemaphoreTake(fade_lock, 0) != pdTRUE) {
         log_i("Lights are currently fading, ignoring fade request");
         return;
     }
     auto target = percent_to_duty(percent);
     auto current = ledcRead(pins::LIGHTS);
     log_d("Fading lights from %ul (%d%%) to %ul (%d%%)", current, duty_to_percent(current), target, percent);
-    fading = true;
 #ifndef WOKWI // WOKWI doesn't support ledcFade APIs
-    ledcFadeWithInterrupt(pins::LIGHTS, current, target, FADE_TIME, fade_isr);
+    if (!ledcFade(pins::LIGHTS, current, target, FADE_TIME)) {
+        log_e("Failed to start fade, resetting ledc");
+        // fade failed, reset ledc
+        ledcDetach(pins::LIGHTS);
+        ledcAttach(pins::LIGHTS, FREQ, RESOLUTION);
+        xSemaphoreGive(fade_lock);
+        return;
+    }
+    // add a small delay to ensure the fade has finished
+    fade_timer.once_ms(FADE_TIME + 50, fade_callback);
 #else
     ledcWrite(pins::LIGHTS, target);
     fade_isr();

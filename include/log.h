@@ -1,9 +1,20 @@
 #ifndef LOG_H
 #define LOG_H
 
-#define CUSTOM_LOG_FORMAT(letter, format) ARDUHAL_LOG_COLOR_ ## letter "%s " #letter \
-    " [%s:%u] %s(): " format ARDUHAL_LOG_RESET_COLOR "\r\n", \
-    esp_log_system_timestamp(), pathToFileName(__FILE__), __LINE__, __FUNCTION__
+static const char *log_timestamp() {
+    static char timestamp[25];
+    struct timeval tv{};
+    gettimeofday(&tv, nullptr);
+    struct tm tm{};
+    localtime_r(&tv.tv_sec, &tm);
+    snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02dT%02d:%02d:%02d.%03ld",
+             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, tv.tv_usec / 1000);
+    return timestamp;
+}
+
+#define CUSTOM_LOG_FORMAT(letter, format) "%s " #letter \
+    " [%s:%u] %s(): " format "\r\n", \
+    log_timestamp(), pathToFileName(__FILE__), __LINE__, __FUNCTION__
 
 #if CORE_DEBUG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
 #undef log_v

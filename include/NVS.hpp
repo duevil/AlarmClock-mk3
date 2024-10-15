@@ -23,7 +23,7 @@ public:
     /*!
      * @brief Destructor. Removes the pointer to the instance
      */
-    ~NVS() { instances.erase(this); }
+    virtual ~NVS() { instances.erase(this); }
 
     /*!
      * @brief Loads all the values from the NVS
@@ -38,6 +38,10 @@ public:
             instance->load();
         }
     }
+
+    // Disable copy and move semantics
+    NVS(const NVS &) = delete;
+    NVS &operator=(const NVS &) = delete;
 };
 
 //! Template variable that is true if the type is supported by the Preferences API.
@@ -58,7 +62,7 @@ constexpr bool is_nvs_type_v = true;
  * using the assignment operator or call the store method
  */
 template<typename T> requires is_nvs_type_v<T>
-class NVSValue : NVS {
+class NVSValue : private NVS {
     T value{};
     const char *name;
 
@@ -76,14 +80,14 @@ public:
     }
 
     /*!
-     * @brief Loads the value from the preferences if or, if the value is not present, creates a new entry
+     * @brief Loads the value from the preferences or, if the value is not present, creates a new entry
      */
     void load() override {
         if (prefs.isKey(name)) {
-            log_d("Loading value for %s", name);
             value = get();
+            log_d("Loaded value for %s: %s", name, String(value).c_str());
         } else {
-            log_i("No value for %s found, creating a new entry with the default value", name);
+            log_w("No value for %s found, creating a new entry with the default value", name);
             put(value);
         }
     }

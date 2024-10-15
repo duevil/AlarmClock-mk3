@@ -1,6 +1,6 @@
 #include "weather.h"
 
-static inline constexpr const auto TICKER_INTERVAL = 30 * 60; // 30 minutes
+static inline constexpr const auto TICKER_INTERVAL = 10 * 60; // 30 minutes // TODO: change to 30 minutes
 
 static weather::data weatherData;
 static Ticker weatherTicker;
@@ -21,7 +21,7 @@ static void update(const JsonDocument &doc);
 
 static void fetchWeather() {
     log_d("Fetching weather data");
-    http_request::getJson(getURL().c_str(), update, filter);
+    http_request::get(getURL(), update, filter);
 }
 
 

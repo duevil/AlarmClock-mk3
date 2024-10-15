@@ -1,5 +1,6 @@
 #include "rtc.h"
-#include "timezones.h"
+
+// TODO: Add alarm setup and handling functions
 
 static inline constexpr const auto DEFAULT_TZ = "CET-1CEST,M3.5.0,M10.5.0/3";
 static inline constexpr const auto NTP_SERVER_1 = "pool.ntp.org";
@@ -21,39 +22,35 @@ static Ticker updateInternetRTCTimer;
 static DateTime time_tToDateTime(time_t);
 static void ntpCallback(struct timeval *);
 static void updateNow();
-static void updateInternetRTC();
-static bool setTimeZone(const char *, size_t);
+static void updateInternalRTC();
+static bool setTimeZone(const String &);
 
-/**
+/*!
  * @brief Setup the RTC and enable NTP synchronization.
  */
 void rtc::setup() {
     rtcAvailable = rtcObj.begin();
     if (rtcAvailable) {
 #ifndef WOKWI
-        if (!rtcObj.lostPower()) {
+        if (rtcObj.lostPower()) {
 #else
-        if (!rtcObj.isrunning()) {
+            if (!rtcObj.isrunning()) {
 #endif
-            log_e("RTC is NOT running!");
+            log_w("RTC is NOT running!");
             rtcObj.adjust(DateTime(__DATE__, __TIME__));
-            rtcAvailable = false;
         } else {
             log_i("RTC is running");
-            rtcAvailable = true;
         }
     } else {
         log_e("Couldn't find RTC");
     }
 
-    // Get the current timezone based on the IP address and update the system timezone
-    http_request::get(TIMEZONE_API_URL, setTimeZone);
     configTzTime(DEFAULT_TZ, NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3);
     esp_sntp_set_time_sync_notification_cb(ntpCallback);
     esp_sntp_set_sync_interval(NTP_SYNC_INTERVAL);
     updateNowTimer.attach_ms(100, updateNow);
-    updateInternetRTCTimer.attach(60 * 60 * 1000, updateInternetRTC);
-    updateInternetRTC();
+    updateInternetRTCTimer.attach(60 * 60 * 1000, updateInternalRTC);
+    updateInternalRTC();
 }
 
 static DateTime time_tToDateTime(time_t time) {
@@ -71,10 +68,10 @@ static DateTime time_tToDateTime(time_t time) {
 
 static void ntpCallback(struct timeval *tv) {
     auto rtcOld = rtcObj.now();
-    rtcObj.adjust(time_tToDateTime(tv->tv_sec));
-    auto rtcNew = rtcObj.now();
-    auto diff = (rtcNew - rtcOld).totalseconds();
-    if (abs(diff) > 1) {
+    auto rtcNew = time_tToDateTime(tv->tv_sec);
+    if (auto diff = (rtcNew - rtcOld).totalseconds(); abs(diff) > 1) {
+        rtcObj.adjust(rtcNew);
+        rtcNew = rtcObj.now();
         log_w("RTC adjusted from NTP: %s (%+d seconds)", rtcNew.timestamp().c_str(), diff);
     } else {
         log_i("RTC in sync with NTP: %s", rtcNew.timestamp().c_str());
@@ -83,23 +80,21 @@ static void ntpCallback(struct timeval *tv) {
     http_request::get(TIMEZONE_API_URL, setTimeZone);
 }
 
-static void updateNow() {
-    global::now = time_tToDateTime(time(nullptr));
-    log_v("Updated now: %s", global::now.timestamp().c_str());
-}
+static void updateNow() { global::now = time_tToDateTime(time(nullptr)); }
 
-static void updateInternetRTC() {
+static void updateInternalRTC() {
     if (!rtcAvailable) {
         return; // Don't update internal RTC with invalid time
     }
     auto _now = rtcObj.now();
     struct tm tm{
-            _now.second(),
-            _now.minute(),
-            _now.hour(),
-            _now.day(),
-            _now.month() - 1,
-            _now.year() - 1900,
+            .tm_sec = _now.second(),
+            .tm_min = _now.minute(),
+            .tm_hour = _now.hour(),
+            .tm_mday = _now.day(),
+            .tm_mon = _now.month() - 1,
+            .tm_year = _now.year() - 1900,
+            .tm_isdst = -1
     };
     time_t t = mktime(&tm);
     if (t != -1) {
@@ -113,10 +108,10 @@ static void updateInternetRTC() {
     }
 }
 
-static bool setTimeZone(const char *c_tz, size_t c_len) {
+static bool setTimeZone(const String &tzRef) {
     // roughly taken from https://github.com/mathieucarbou/MycilaNTP/blob/main/src/MycilaNTP.cpp
 
-    auto tz = String(c_tz, c_len);
+    auto tz = tzRef; // copy
     tz.trim();
     auto len = tz.length();
     if (len == 0) return false;

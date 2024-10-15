@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "fonts.h"
 
 // TODO:
 //  Currently the UI was only tested inside the Wokwi simulator.

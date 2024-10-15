@@ -5,25 +5,30 @@
 #include <span>
 #include <sstream>
 #include <unordered_set>
+#include <charconv>
+#include <variant>
 // Arduino library includes
+#include <idf_additions.h>
 #include <Arduino.h>
 #include <Ticker.h>
 #include <Preferences.h>
 #include <SD.h>
 #include <sntp.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
 // external library includes
 #include <Bounce2.h>
 #include <U8g2lib.h>
 #include <MUIU8g2.h>
 #include <RTClib.h>
 #include <ArduinoJson.h>
-#include <AsyncTCP.h>
 #include <MD_MAX72xx.h>
 #include <MD_Parola.h>
+#include <Adafruit_SHT4x.h>
+#include <hp_BH1750.h>
 // own includes
-#include "secrets.h"
 #include "log.h"
+#include "secrets.h"
 #include "lights.h"
 #include "NVS.hpp"
 #include "ui_boot_process.h"
@@ -34,6 +39,9 @@
 #include "weather.h"
 #include "matrix_font.h"
 #include "matrix.h"
+#include "sensors.h"
+#include "fonts.h"
+#include "timezones.h"
 
 #define PIN_T inline constexpr uint8_t
 namespace pins {
@@ -53,7 +61,6 @@ namespace pins {
 namespace global {
     inline bool sdAvailable{false}; //!< True if the SD card is available
     inline DateTime now{}; //!< Current date and time
-    inline NVSValue<uint8_t> logFileIndex{"log_file_index", 0}; //!< Index of the current log file
     inline NVSValue<uint8_t> lightDuration{"light_duration", 45}; //!< Duration for the lights to turn off after in minutes
     inline NVSValue latitude{"latitude", DEFAULT_LATITUDE}; //!< Latitude of the device
     inline NVSValue longitude{"longitude", DEFAULT_LONGITUDE}; //!< Longitude of the device
