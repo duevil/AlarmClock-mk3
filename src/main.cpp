@@ -33,10 +33,16 @@ void loop() {
         case L_S:
             light = light > 10 ? light - 10 : 100;
             lights::fade(light);
+            audio::volumeUp();
             break;
         case R_S:
             light = light < 100 ? light + 10 : 0;
             lights::fade(light);
+            audio::volumeDown();
+            break;
+        case L_L:
+        case R_L:
+            audio::play();
             break;
         default:
             break;
@@ -48,4 +54,5 @@ void loop() {
 #endif
 
     sensors::loop();
+    audio::loop();
 }

@@ -26,6 +26,10 @@
 #include <MD_Parola.h>
 #include <Adafruit_SHT4x.h>
 #include <hp_BH1750.h>
+#include <AudioTools.h>
+#include <AudioTools/AudioLibs/FileLoop.h>
+#include <AudioTools/AudioLibs/MemoryManager.h>
+#include <AudioTools/AudioCodecs/CodecMP3Helix.h>
 // own includes
 #include "log.h"
 #include "secrets.h"
@@ -42,6 +46,8 @@
 #include "sensors.h"
 #include "fonts.h"
 #include "timezones.h"
+#include "Sound.hpp"
+#include "audio.h"
 
 #define PIN_T inline constexpr uint8_t
 namespace pins {

@@ -12,6 +12,7 @@ static constexpr ui_bp_t uiBootProcessList[] = {
             log_e("SD card initialization failed");
         }},
         {20, "RTC", rtc::setup},
+        {22, "Audio", audio::setup},
         {25, "Sensors", sensors::setup},
         {30, "Lights", lights::setup},
 #ifndef WOKWI
