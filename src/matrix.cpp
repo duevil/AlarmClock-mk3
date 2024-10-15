@@ -12,6 +12,11 @@ static char subscript(char c) {
 }
 
 static void matrixDrawTime() {
+    auto lightLevel = sensors::light();
+    const auto b = fabs(lightLevel) < 1e-6;
+    md.displayShutdown(b);
+    if (b) return;
+    md.setIntensity(static_cast<uint8_t>(3.0f * log(lightLevel + 1)));
     strcpy(nowStr, "hh:mm ss");
     global::now.toString(nowStr);
     nowStr[6] = subscript(nowStr[6]);
@@ -26,7 +31,7 @@ void matrix::setup() {
     auto res = md.begin();
     assert(res && "Matrix setup failed");
     (void) res; // Suppress unused variable warning
-    md.setIntensity(15);
+    md.setIntensity(0);
     md.setFont(MATRIX_FONT);
     md.setTextAlignment(PA_CENTER);
     md.setCharSpacing(0);

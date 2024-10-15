@@ -24,9 +24,7 @@ static constexpr ui_bp_t uiBootProcessList[] = {
         }},
 #endif
         {50, "Weather", weather::setup},
-#ifdef WOKWI //fixme setting up the matrix without a physical hardware will cause the OLED display to stop working
         {60, "Matrix", matrix::setup},
-#endif
         {100, "Done", nullptr},
 };
 

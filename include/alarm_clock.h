@@ -45,23 +45,24 @@
 
 #define PIN_T inline constexpr uint8_t
 namespace pins {
-    PIN_T I2S_DATA = GPIO_NUM_26;
-    PIN_T I2S_BCK = GPIO_NUM_25;
-    PIN_T I2S_LRC = GPIO_NUM_4;
-    PIN_T DISPLAY_DC = GPIO_NUM_7;
-    PIN_T DISPLAY_CS = GPIO_NUM_8;
-    PIN_T LIGHTS = GPIO_NUM_13;
-    PIN_T DISPLAY_RST = GPIO_NUM_12;
-    PIN_T MATRIX_CS = GPIO_NUM_27;
     PIN_T LEFT_BUTTON = GPIO_NUM_34;
     PIN_T MIDDLE_BUTTON = GPIO_NUM_39;
     PIN_T RIGHT_BUTTON = GPIO_NUM_36;
+    PIN_T MATRIX_CS = GPIO_NUM_4;
+    PIN_T DISPLAY_DC = GPIO_NUM_7;
+    PIN_T DISPLAY_CS = GPIO_NUM_8;
+    PIN_T LIGHTS = GPIO_NUM_13;
+    PIN_T DISPLAY_RST = GPIO_NUM_27;
+    PIN_T I2S_DATA = GPIO_NUM_15;
+    PIN_T I2S_BCK = GPIO_NUM_32;
+    PIN_T I2S_LRC = GPIO_NUM_14;
 }
 
 namespace global {
     inline bool sdAvailable{false}; //!< True if the SD card is available
     inline DateTime now{}; //!< Current date and time
-    inline NVSValue<uint8_t> lightDuration{"light_duration", 45}; //!< Duration for the lights to turn off after in minutes
+    inline NVSValue<uint8_t> lightDuration{"light_duration",
+                                           45}; //!< Duration for the lights to turn off after in minutes
     inline NVSValue latitude{"latitude", DEFAULT_LATITUDE}; //!< Latitude of the device
     inline NVSValue longitude{"longitude", DEFAULT_LONGITUDE}; //!< Longitude of the device
 }
