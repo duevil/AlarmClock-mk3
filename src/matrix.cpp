@@ -3,7 +3,7 @@
 // TODO: Maybe add support for multiple tabs with animations sometime in the future
 
 static MD_Parola md{MD_MAX72XX::FC16_HW, pins::MATRIX_CS, 4};
-static Ticker drawTimer;
+static uint32_t lastUpdate{0};
 static char nowStr[9];
 
 static char subscript(char c) {
@@ -16,7 +16,7 @@ static void matrixDrawTime() {
     const auto b = fabs(lightLevel) < 1e-6;
     md.displayShutdown(b);
     if (b) return;
-    md.setIntensity(static_cast<uint8_t>(3.0f * log(lightLevel + 1)));
+    md.setIntensity(static_cast<uint8_t>(2.5f * log(lightLevel / 20.0f + 1.0f)));
     strcpy(nowStr, "hh:mm ss");
     global::now.toString(nowStr);
     nowStr[6] = subscript(nowStr[6]);
@@ -36,6 +36,12 @@ void matrix::setup() {
     md.setTextAlignment(PA_CENTER);
     md.setCharSpacing(0);
     md.setTextEffect(PA_NO_EFFECT, PA_NO_EFFECT);
-    drawTimer.attach_ms(100, matrixDrawTime);
     matrixDrawTime();
+}
+
+void matrix::loop() {
+    if (millis() - lastUpdate > 100) {
+        lastUpdate = millis();
+        matrixDrawTime();
+    }
 }

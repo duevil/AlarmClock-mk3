@@ -5,6 +5,7 @@
 
 namespace matrix {
     void setup();
+    void loop();
 }
 
 #endif //MATRIX_H
