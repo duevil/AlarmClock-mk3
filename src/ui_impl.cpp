@@ -16,13 +16,14 @@ static constexpr ui_bp_t uiBootProcessList[] = {
         {25, "Sensors", sensors::setup},
         {30, "Lights", lights::setup},
 #ifndef WOKWI
-        {40, "WiFi setup", [] {
+        {40, "Webserver", webserver::setup},
+        /*{40, "WiFi setup", [] {
             // TODO: Change this to use a WiFi manager
             WiFi.begin(WIFI_SSID, WIFI_PASS, 6);
             while (WiFi.status() != WL_CONNECTED) {
                 delay(250);
             }
-        }},
+        }},*/
 #endif
         {50, "Weather", weather::setup},
         {60, "Matrix", matrix::setup},

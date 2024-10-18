@@ -56,4 +56,5 @@ void loop() {
     sensors::loop();
     audio::loop();
     matrix::loop();
+    webserver::loop();
 }

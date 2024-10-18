@@ -3,6 +3,8 @@
 extern const uint8_t default_sound_start[] asm("_binary_src_default_mp3_start");
 extern const uint8_t default_sound_end[] asm("_binary_src_default_mp3_end");
 
+using namespace audio_tools;
+
 static NVSValue<uint8_t> volumeNVS{"volume", 80};
 static MemoryManager mem{};
 static I2SStream i2s{};

@@ -16,6 +16,7 @@
 #include <sntp.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <DNSServer.h>
 // external library includes
 #include <Bounce2.h>
 #include <U8g2lib.h>
@@ -30,6 +31,9 @@
 #include <AudioTools/AudioLibs/FileLoop.h>
 #include <AudioTools/AudioLibs/MemoryManager.h>
 #include <AudioTools/AudioCodecs/CodecMP3Helix.h>
+#include <ESPmDNS.h>
+#include <ESPAsyncWebServer.h>
+#include <ElegantOTA.h>
 // own includes
 #include "log.h"
 #include "secrets.h"
@@ -48,6 +52,7 @@
 #include "timezones.h"
 #include "Sound.hpp"
 #include "audio.h"
+#include "webserver.h"
 
 #define PIN_T inline constexpr uint8_t
 namespace pins {
