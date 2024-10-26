@@ -120,6 +120,11 @@ public:
     inline T &operator*() { return value; }
 
     /*!
+     * @brief Gets a const reference to the stored value
+     */
+    inline const T &operator*() const { return value; }
+
+    /*!
      * @brief Gets a pointer to the stored value
      */
     inline T *operator->() { return &value; }

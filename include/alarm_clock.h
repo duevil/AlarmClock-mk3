@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <charconv>
 #include <variant>
+#include <utility>
 // Arduino library includes
 #include <idf_additions.h>
 #include <Arduino.h>
@@ -39,6 +40,7 @@
 #include "secrets.h"
 #include "lights.h"
 #include "NVS.hpp"
+#include "Alarm.hpp"
 #include "ui_boot_process.h"
 #include "fonts.h"
 #include "ui.h"
@@ -51,6 +53,7 @@
 #include "fonts.h"
 #include "timezones.h"
 #include "Sound.hpp"
+#include "sounds.h"
 #include "audio.h"
 #include "webserver.h"
 
@@ -77,6 +80,8 @@ namespace global {
                                            45}; //!< Duration for the lights to turn off after in minutes
     inline NVSValue latitude{"latitude", DEFAULT_LATITUDE}; //!< Latitude of the device
     inline NVSValue longitude{"longitude", DEFAULT_LONGITUDE}; //!< Longitude of the device
+    inline Alarm &a1 = Alarm::A1; //!< Alarm 1
+    inline Alarm &a2 = Alarm::A2; //!< Alarm 2
 }
 
 int log_vprintf(const char *, va_list);
