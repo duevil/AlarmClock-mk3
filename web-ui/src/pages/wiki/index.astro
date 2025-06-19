@@ -1,0 +1,19 @@
+---
+import {getCollection} from "astro:content";
+import Base from '@layouts/Base.astro';
+
+const wiki_pages = await getCollection('wiki');
+const wiki = wiki_pages.map(entry => ({
+    id: entry.id,
+    title: entry?.rendered?.metadata?.headings[0]?.text
+}));
+---
+
+<Base title="Wiki">
+    <h1>AlarmClock MK3 Wiki</h1>
+    <ul>{
+        wiki.map(entry => (
+                <li><a href=`/wiki/${entry.id}`>{entry.title}</a></li>
+        ))
+    }</ul>
+</Base>

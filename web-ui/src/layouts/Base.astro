@@ -1,0 +1,33 @@
+---
+import '@picocss/pico/css/pico.classless.orange.min.css';
+---
+
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <meta name="viewport" content="width=device-width"/>
+    <meta name="generator" content={Astro.generator}/>
+    <title>{Astro.props.title}</title>
+</head>
+<body>
+<header>
+    <nav>
+        <ul><li><strong>AlarmClock mk3</strong></li></ul>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/wiki">Wiki</a></li>
+            <li><a href="/api">API</a></li>
+        </ul>
+    </nav>
+    <hr>
+</header>
+<main>
+    <slot/>
+</main>
+<footer>
+    <hr>
+    <p><small>&copy; 2025 Malte Kasolowsky</small></p>
+</footer>
+</body>
+</html>
