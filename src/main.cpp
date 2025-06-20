@@ -1,18 +1,18 @@
-#ifdef ARDUINO
 #include <Arduino.h>
-#else
-#include "mockup/mockup.h"
-#endif
+#include "log.h"
+#include "events/events.hpp"
 
 
 void setup()
 {
-    Serial.begin(SERIAL_BAUD_RATE);
-    printf("Hello World\n");
+    using namespace logging;
+    Logger.initialize();
+    Logger.registerDevice<SerialLog>(DEFAULT_LEVEL, LEVEL_LETTER | TIMESTAMP_FULL | FILE_TRACE | FUNCTION_TRACE);
+    LOG_I("Hello World");
 }
 
 void loop()
 {
-    printf("%u\n", millis());
     delay(1000);
+    LOG_I("millis: %lu", millis());
 }
