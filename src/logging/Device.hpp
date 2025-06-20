@@ -24,57 +24,69 @@ namespace logging
 
             writeStart(entry);
 
+            auto level = static_cast<std::underlying_type_t<Level>>(entry.level) - 1;
+            if ((m_format & LEVEL_FULL) == LEVEL_FULL)
+            {
+                *this << '[' << LEVEL_STR_FULL[level] << "] ";
+            }
+            else if (m_format & LEVEL_LETTER)
+            {
+                *this << '[' << LEVEL_STR_LETTER[level] << "] ";
+            }
+            else if (m_format & LEVEL_SHORT)
+            {
+                *this << '[' << LEVEL_STR_SHORT[level] << "] ";
+            }
+
             if ((m_format & TIMESTAMP_FULL) == TIMESTAMP_FULL)
             {
                 // print timestamp as YYYY-MM-DD HH:MM:SS
                 auto tm = localtime(&entry.timestamp);
-                printf("%04u-%02u-%02u %02u:%02u:%02u ",
-                       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-                       tm->tm_hour, tm->tm_min, tm->tm_sec);
+                char buf[32]{};
+                strftime(buf, sizeof(buf), "%FT%T%z ", tm);
+                *this << buf;
             }
             else if (m_format & TIMESTAMP_SIMPLE)
             {
                 // print timestamp in seconds
-                printf("%lli ", entry.timestamp);
+                printf("%010lli ", entry.timestamp);
             }
             else if (m_format & TIMESTAMP_SHORT)
             {
                 // print timestamp as HH:MM:SS
                 auto tm = localtime(&entry.timestamp);
-                printf("%02u:%02u:%02u ", tm->tm_hour, tm->tm_min, tm->tm_sec);
+                char buf[10]{};
+                strftime(buf, sizeof(buf), "%T ", tm);
+                *this << buf;
             }
 
-            auto level = static_cast<std::underlying_type_t<Level>>(entry.level);
-            if ((m_format & LEVEL_FULL) == LEVEL_FULL)
+            if (m_format & FILE_TRACE || m_format & FUNCTION_TRACE)
             {
-                printf("[%s] ", LEVEL_STR_FULL[level]);
-            }
-            else if (m_format & LEVEL_LETTER)
-            {
-                printf("[%c] ", LEVEL_STR_LETTER[level]);
-            }
-            else if (m_format & LEVEL_SHORT)
-            {
-                printf("[%-.*s] ", 3, &LEVEL_STR_SHORT[level * 3]);
-            }
-
-            if (m_format & FILE_TRACE && m_format & FUNCTION_TRACE)
-            {
-                printf("[%s:%u %s] ", entry.file, entry.line, entry.function);
-            }
-            else if (m_format & FILE_TRACE)
-            {
-                printf("[%s:%u] ", entry.file, entry.line);
-            }
-            else if (m_format & FUNCTION_TRACE)
-            {
-                printf("[%s] ", entry.function);
+                *this << '[';
+                if (m_format & FILE_TRACE)
+                {
+                    *this << entry.file << ':' << entry.line;
+                }
+                if (m_format & FILE_TRACE && m_format & FUNCTION_TRACE)
+                {
+                    *this << ' ';
+                }
+                if (m_format & FUNCTION_TRACE)
+                {
+                    *this << entry.function;
+                }
+                *this << "] ";
             }
 
-            if (m_format & TASK_TRACE && entry.task != nullptr)
+            if (m_format & TASK_TRACE)
             {
                 auto name = pcTaskGetName(entry.task);
-                printf("[task: %s] ", name ? name : "(null)");
+                *this << "[task: " << (name ? name : "<null>") << "] ";
+            }
+
+            if (m_format)
+            {
+                *this << "- ";
             }
 
             println(entry.message);
@@ -90,6 +102,12 @@ namespace logging
     private:
         Level m_level;
         int m_format;
+
+        Device& operator<<(auto x)
+        {
+            print(x);
+            return *this;
+        }
     };
 }
 

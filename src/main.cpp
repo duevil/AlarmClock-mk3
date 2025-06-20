@@ -1,18 +1,25 @@
 #include <Arduino.h>
 #include "log.h"
-#include "events/events.hpp"
 
+void test()
+{
+    delay(1000);
+    LOG_I("millis: %lu", millis());
+}
+
+const ThreadFunc<typeof(&test), 2048> tTest{test, {.name = "test", .priority = 10}};
+constexpr auto s = sizeof(tTest);
+
+
+using namespace logging;
 
 void setup()
 {
-    using namespace logging;
-    Logger.initialize();
-    Logger.registerDevice<SerialLog>(DEFAULT_LEVEL, LEVEL_LETTER | TIMESTAMP_FULL | FILE_TRACE | FUNCTION_TRACE);
+    Logger.registerDevice<SerialLog>(Level::DEBUG);
     LOG_I("Hello World");
 }
 
 void loop()
 {
-    delay(1000);
-    LOG_I("millis: %lu", millis());
+    delay(10);
 }

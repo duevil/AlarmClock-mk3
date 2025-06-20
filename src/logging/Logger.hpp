@@ -2,6 +2,8 @@
 #define LOGGER_HPP
 
 #include "Device.hpp"
+#include "util/BlockingQueue.hpp"
+#include <util/Thread.hpp>
 #include <memory>
 #include <ranges>
 #include <algorithm>
@@ -13,23 +15,9 @@
 
 namespace logging
 {
-    void _logger_task_handle(auto*);
-
-
-    inline struct
+    inline struct Logger final : Thread<2048>
     {
-        void initialize()
-        {
-            m_queue = xQueueCreateStatic(LOG_QUEUE_LENGTH, sizeof(Entry), m_queueStack, &m_queueBuf);
-            xTaskCreateStaticPinnedToCore(_logger_task_handle,
-                                          "logging_task",
-                                          std::size(m_taskStack),
-                                          nullptr,
-                                          0,
-                                          m_taskStack,
-                                          &m_taskBuf,
-                                          APP_CPU_NUM);
-        }
+        Logger() : Thread({.name = "logging", .coreId = PRO_CPU_NUM}) {}
 
         template <typename TDevice> requires std::is_base_of_v<Device, TDevice>
         bool registerDevice(Level level = DEFAULT_LEVEL, int format = DEFAULT_FORMAT,
@@ -56,36 +44,27 @@ namespace logging
             }
         }
 
-        void log(const Entry& entry) const
+        void log(const Entry& entry)
         {
-            xQueueSend(m_queue, &entry, 0);
+            m_queue.offer(entry);
         }
 
     private:
-        friend void _logger_task_handle(auto*);
         std::vector<std::unique_ptr<Device>> m_devices{};
-        QueueHandle_t m_queue{};
-        StaticQueue_t m_queueBuf{};
-        StackType_t m_queueStack[LOG_QUEUE_LENGTH * sizeof(Entry)]{};
-        StaticTask_t m_taskBuf{};
-        StackType_t m_taskStack[2048]{};
-    } Logger;
+        ESPQueue<LOG_QUEUE_LENGTH, Entry> m_queue{};
+        Entry m_entry_buf{};
 
-
-    [[noreturn]] void _logger_task_handle(auto*)
-    {
-        auto entry = new Entry{};
-        while (true)
+        void run() override
         {
-            if (auto received = xQueueReceive(Logger.m_queue, entry, portMAX_DELAY); received == pdTRUE)
+            m_queue.take(m_entry_buf);
+            for (const auto& device : m_devices)
             {
-                for (const auto& device : Logger.m_devices)
-                {
-                    device->write(*entry);
-                }
+                device->write(m_entry_buf);
             }
         }
-    }
+    } Logger;
+
+    constexpr auto s = sizeof(Logger);
 }
 
 

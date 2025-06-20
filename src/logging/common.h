@@ -36,7 +36,7 @@ namespace logging
     };
 
     constexpr auto LEVEL_STR_LETTER = "FEWNIDTVA";
-    constexpr auto LEVEL_STR_SHORT = "FATERRWARNOTINFDEBTRAVERALW";
+    constexpr const char* LEVEL_STR_SHORT[] = {"FAT", "ERR", "WAR", "NOT", "INF", "DEB", "TRA", "VER", "ALW"};
     constexpr const char* LEVEL_STR_FULL[] = {
         "FATAL",
         "ERROR",
