@@ -24,39 +24,7 @@ namespace events
         void* data;
     };
 
-
-    struct HandlerInstance
-    {
-        esp_event_handler_instance_t esp_instance;
-        void(*handler)(const Event&);
-    };
-
-    using HandlerInstancePtr = std::unique_ptr<HandlerInstance>;
-
-
-    inline struct
-    {
-        auto& create(auto handler)
-        {
-            return *m_handlers.emplace(std::make_unique<HandlerInstance>(nullptr, handler)).first;
-        }
-
-        void destroy(const HandlerInstancePtr& handler_ptr)
-        {
-            m_handlers.erase(handler_ptr);
-        }
-
-        void operator()(const HandlerInstancePtr& instance, const Event& event) const
-        {
-            if (auto it = m_handlers.find(instance); it != m_handlers.end())
-            {
-                it->get()->handler(event);
-            }
-        }
-
-    private:
-        std::unordered_set<std::unique_ptr<HandlerInstance>> m_handlers{};
-    } _handler_instances{};
+    using handler_t = void (*)(const Event&);
 
 
     struct Proxy
@@ -96,28 +64,46 @@ namespace events
     {
         using Proxy::Proxy;
 
-        auto& operator>>(auto handler) const
+        struct Instance
         {
-            auto& handler_instance = _handler_instances.create(handler);
-            auto err = esp_event_handler_instance_register(
-                m_base, m_id,
-                [](auto* handler_arg, esp_event_base_t base, int32_t id, void* data)
-                {
-                    auto& instance = *static_cast<const HandlerInstancePtr*>(handler_arg);
-                    _handler_instances(instance, {base, id, data});
-                },
-                const_cast<void*>(static_cast<const void*>(&handler_instance)), &handler_instance->esp_instance
-            );
+            esp_event_handler_instance_t esp_instance;
+            handler_t handler;
+        };
+
+        using InstancePtr = std::unique_ptr<Instance>;
+
+        auto& operator>>(handler_t handler) const
+        {
+            auto& hi = *s_handlerInstances.emplace(std::make_unique<Instance>(nullptr, handler)).first;
+            auto handler_arg = const_cast<void*>(static_cast<const void*>(&hi));
+            auto err = esp_event_handler_instance_register(m_base, m_id, s_handler, handler_arg, &hi->esp_instance);
             ESP_ERROR_CHECK(err);
-            return handler_instance;
+            return hi;
         }
 
-        void unregister(const HandlerInstancePtr& handler_ptr) const
+        void unregister(const InstancePtr& instance) const
         {
-            ESP_ERROR_CHECK(esp_event_handler_instance_unregister(m_base, m_id, handler_ptr->esp_instance));
-            _handler_instances.destroy(handler_ptr);
+            ESP_ERROR_CHECK(esp_event_handler_instance_unregister(m_base, m_id, instance->esp_instance));
+            if (auto it = s_handlerInstances.find(instance); it != s_handlerInstances.end())
+            {
+                s_handlerInstances.erase(it);
+            }
+        }
+
+    private:
+        static std::unordered_set<InstancePtr> s_handlerInstances;
+
+        static void s_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* data)
+        {
+            auto& hi = *static_cast<const InstancePtr*>(handler_arg);
+            if (auto it = s_handlerInstances.find(hi); it != s_handlerInstances.end())
+            {
+                it->get()->handler({base, id, data});
+            }
         }
     };
+
+    decltype(ListenProxy::s_handlerInstances) ListenProxy::s_handlerInstances{};
 
 
     struct Base : ListenProxy
@@ -130,24 +116,22 @@ namespace events
             return {m_base, id};
         }
 
-        template <typename T>
-        std::conditional_t<std::is_integral_v<T>, ListenProxy, const HandlerInstancePtr&>
-        operator>>(const T& param) const
+        ListenProxy operator>>(int32_t id) const
         {
-            if constexpr (std::is_integral_v<T>)
-            {
-                return {m_base, param};
-            }
-            else
-            {
-                return ListenProxy::operator>>(param);
-            }
+            return {m_base, id};
+        }
+
+        auto& operator>>(handler_t handler) const
+        {
+            return ListenProxy::operator>>(handler);
         }
     };
 
 
     constexpr ListenProxy GLOBAL = Base{nullptr};
 }
+
+using EventHandlerPtr = events::ListenProxy::InstancePtr;
 
 
 #define EVENT_DEFINE(x) constexpr events::Base x{#x}
