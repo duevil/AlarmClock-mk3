@@ -63,8 +63,6 @@ namespace logging
             }
         }
     } Logger;
-
-    constexpr auto s = sizeof(Logger);
 }
 
 

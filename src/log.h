@@ -4,7 +4,7 @@
 #include "logging/Logger.hpp"
 #include "logging/Serial.hpp"
 
-#define LOG_ENTRY(level, format, ...) logging::Entry{level, __FILE__, __LINE__, __FUNCTION__, format __VA_OPT__(,) __VA_ARGS__}
+#define LOG_ENTRY(level, format, ...) logging::Entry{level, __FILE__, __LINE__, __func__, format __VA_OPT__(,) __VA_ARGS__}
 
 #if defined USE_CORE_DEBUG_LEVEL && CORE_DEBUG_LEVEL < 1
 #define LOG_F(format, ...) do {] while (0)

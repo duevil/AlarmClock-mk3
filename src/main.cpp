@@ -2,6 +2,7 @@
 #include "log.h"
 #include "util/events.hpp"
 
+
 void test()
 {
     delay(1000);
@@ -9,15 +10,15 @@ void test()
 }
 
 const ThreadFunc<typeof(&test), 2048> tTest{test, {.name = "test", .priority = 10}};
-constexpr auto s = sizeof(tTest);
+
 
 EVENT_DEFINE(FOO_EVENT);
 
-using namespace logging;
 
 void setup()
 {
-    Logger.registerDevice<SerialLog>(Level::DEBUG);
+    using namespace logging;
+    Logger.registerDevice<SerialLog>(Level::DEBUG, DEFAULT_FORMAT ^ LEVEL_SHORT | LEVEL_LETTER);
     LOG_I("Hello World");
 
 
