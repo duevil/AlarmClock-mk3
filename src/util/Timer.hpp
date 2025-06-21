@@ -79,7 +79,7 @@ struct Timer
     }
 
 private:
-    static std::unordered_map<TimerHandle_t, callback_t> s_callbacks;
+    inline static std::unordered_map<TimerHandle_t, callback_t> s_callbacks{};
     TimerHandle_t m_timer{};
 
     static void s_callback(TimerHandle_t timer)
@@ -107,8 +107,6 @@ private:
         return false;
     }
 };
-
-decltype(Timer::s_callbacks) Timer::s_callbacks{};
 
 
 #endif //TIMER_HPP

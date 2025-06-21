@@ -109,7 +109,7 @@ namespace events
         }
 
     private:
-        static std::unordered_set<InstancePtr> s_handlerInstances;
+        inline static std::unordered_set<InstancePtr> s_handlerInstances{};
 
         static void s_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* data)
         {
@@ -120,8 +120,6 @@ namespace events
             }
         }
     };
-
-    decltype(ListenProxy::s_handlerInstances) ListenProxy::s_handlerInstances{};
 
 
     struct Base : ListenProxy

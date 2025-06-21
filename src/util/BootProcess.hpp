@@ -80,14 +80,10 @@ protected:
 private:
     int32_t m_id = s_counter++;
 
-    static int32_t s_counter;
-    static std::queue<BootProcess*> s_processes;
-    static std::unordered_map<int32_t, const char*> s_descriptions;
+    inline static int32_t s_counter{};
+    inline static std::queue<BootProcess*> s_processes{};
+    inline static std::unordered_map<int32_t, const char*> s_descriptions{};
 };
-
-decltype(BootProcess::s_counter) BootProcess::s_counter = 1;
-decltype(BootProcess::s_processes) BootProcess::s_processes{};
-decltype(BootProcess::s_descriptions) BootProcess::s_descriptions{};
 
 
 /**
