@@ -6,6 +6,9 @@
 #include <unordered_set>
 
 
+static constexpr struct
+{} FROM_ISR;
+
 namespace events
 {
     inline void init()
@@ -45,18 +48,33 @@ namespace events
 
         ~PostProxy()
         {
-            esp_event_post(m_base, m_id, m_data, m_size, 0);
+            if (m_isr)
+            {
+                esp_event_isr_post(m_base, m_id, m_data, m_size, nullptr);
+            }
+            else
+            {
+                esp_event_post(m_base, m_id, m_data, m_size, pdMS_TO_TICKS(10));
+            }
         }
 
-        void operator<<(const auto& data)
+        auto& operator<<(const decltype(FROM_ISR)&)
+        {
+            m_isr = true;
+            return *this;
+        }
+
+        auto& operator<<(const auto& data)
         {
             m_data = &data;
             m_size = sizeof(decltype(data));
+            return *this;
         }
 
     private:
         const void* m_data{};
         size_t m_size{};
+        bool m_isr = false;
     };
 
 
