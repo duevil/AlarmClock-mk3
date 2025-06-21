@@ -2,6 +2,7 @@
 #include "log.h"
 #include "util/events.hpp"
 #include <Ticker.h>
+#include "util/Timer.hpp"
 
 
 void test()
@@ -34,8 +35,7 @@ void setup()
         LOG_W("%s #%d - %llu", event.base, event.id, *static_cast<uint32_t*>(event.data));
     };
 
-    static Ticker ticker;
-    ticker.once(20, [&x]
+    Timer::detached(20, [&x]
     {
         LOG_D("Event handler unregistered");
         FOO_EVENT.unregister(x);
