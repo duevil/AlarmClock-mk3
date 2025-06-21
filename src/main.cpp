@@ -52,7 +52,14 @@ void setup()
     };
     BOOT_EVENT >> [](auto& event)
     {
-        LOG_I("(boot %02d/%02d) %s", event.id + 1, BootProcess::count(), BootProcess::description(event.id));
+        if (event.id == BootProcess::EVENT_ALL_COMPLETED)
+        {
+            LOG_I("(boot) completed");
+        }
+        else
+        {
+            LOG_I("(boot %02d/%02d) %s", event.id + 1, BootProcess::count(), BootProcess::description(event.id));
+        }
     };
 
     Timer::detached(20, [&x]

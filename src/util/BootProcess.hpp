@@ -1,5 +1,6 @@
 #ifndef BOOT_PROCESS_HPP
 #define BOOT_PROCESS_HPP
+#include "events.hpp"
 
 
 //! Event posted when a boot process completes
@@ -8,14 +9,12 @@ EVENT_DEFINE(BOOT_EVENT);
 /**
  * Structure defining a bootable process.
  *
- * Creating a boot process appends it to a list of process,
- * which can be used to execute all boot processes at once.
+ * Creating a boot process appends it to a list of process, which can be used to execute all boot processes at once.
  *
- * Running a boot process will emmit an event with the process id
- * when the process is completed.
+ * Running a boot process will emmit an event with the process id when the process is completed.
+ * When all processes are completed, <code>EVENT_ALL_COMPLETED</code> is emitted.
  *
- * Each boot process is assigned a description string, which can
- * be queried using the process id.
+ * Each boot process is assigned a description string, which can be queried using the process id.
  *
  * Classes implementing a boot process must implement the <code>run()</code> method.
  *
@@ -25,6 +24,8 @@ EVENT_DEFINE(BOOT_EVENT);
  */
 struct BootProcess
 {
+    static constexpr int32_t EVENT_ALL_COMPLETED = INT32_MAX;
+
     /**
      * Create a new boot process and append it to the list of processes
      * @param description The description of this process
@@ -40,8 +41,8 @@ struct BootProcess
     /**
      * Run all boot processes
      *
-     * @note should only be called once as a process is removed from the internal list upon completion,
-     * so any later calls will do nothing
+     * @note Should only be called once as a process is removed from the internal list upon completion,
+     * so any later calls will only emit <code>EVENT_ALL_COMPLETED</code> again
      */
     static void runAll()
     {
@@ -50,10 +51,11 @@ struct BootProcess
             if (auto process = s_processes.front())
             {
                 process->runProcess();
-                BOOT_EVENT << static_cast<int32_t>(process->m_id);
+                BOOT_EVENT << process->m_id;
             }
             s_processes.pop();
         }
+        BOOT_EVENT << EVENT_ALL_COMPLETED;
     }
 
     /**
@@ -64,32 +66,26 @@ struct BootProcess
      */
     static const char* description(int32_t id)
     {
-        if (auto it = s_descriptions.find(id); it != s_descriptions.end())
-        {
-            return it->second;
-        }
-        return nullptr;
+        return id == EVENT_ALL_COMPLETED ? "" : s_descriptions.at(id);
     }
 
-    /**
-     * Get the number of boot processes
-     * @return The total number of registered boot processes
-     */
-    static auto count()
+    static int32_t count()
     {
-        return s_processes.size();
+        return s_counter;
     }
 
 protected:
     virtual void runProcess() = 0;
 
 private:
-    auto m_id = static_cast<int32_t>(s_processes.size());
+    int32_t m_id = s_counter++;
 
+    static int32_t s_counter;
     static std::queue<BootProcess*> s_processes;
     static std::unordered_map<int32_t, const char*> s_descriptions;
 };
 
+decltype(BootProcess::s_counter) BootProcess::s_counter = 1;
 decltype(BootProcess::s_processes) BootProcess::s_processes{};
 decltype(BootProcess::s_descriptions) BootProcess::s_descriptions{};
 
