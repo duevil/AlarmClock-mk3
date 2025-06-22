@@ -1,5 +1,6 @@
 #ifndef BOOT_PROCESS_HPP
 #define BOOT_PROCESS_HPP
+
 #include "events.hpp"
 
 
@@ -30,10 +31,9 @@ struct BootProcess
      * Create a new boot process and append it to the list of processes
      * @param description The description of this process
      */
-    explicit BootProcess(const char* description)
+    explicit BootProcess(const char* description) : m_description(description)
     {
         s_processes.emplace(this);
-        s_descriptions.emplace(m_id, description);
     }
 
     virtual ~BootProcess() = default;
@@ -50,23 +50,12 @@ struct BootProcess
         {
             if (auto process = s_processes.front())
             {
-                process->runProcess();
-                BOOT_EVENT << process->m_id;
+                process->runBootProcess();
+                BOOT_EVENT << process->m_id << process->m_description;
             }
             s_processes.pop();
         }
         BOOT_EVENT << EVENT_ALL_COMPLETED;
-    }
-
-    /**
-     * Get the description for a boot process
-     * @param id The process id
-     * @return The description of the boot process
-     * or nullptr if no process is found for the given id
-     */
-    static const char* description(int32_t id)
-    {
-        return id == EVENT_ALL_COMPLETED ? "" : s_descriptions.at(id);
     }
 
     static int32_t count()
@@ -75,14 +64,14 @@ struct BootProcess
     }
 
 protected:
-    virtual void runProcess() = 0;
+    virtual void runBootProcess() = 0;
 
 private:
     int32_t m_id = s_counter++;
+    const char* m_description = nullptr;
 
     inline static int32_t s_counter{};
     inline static std::queue<BootProcess*> s_processes{};
-    inline static std::unordered_map<int32_t, const char*> s_descriptions{};
 };
 
 
@@ -96,7 +85,7 @@ struct FuncBootProcess final : BootProcess
     explicit FuncBootProcess(const char* description, Func func): BootProcess(description), m_func(func) {}
 
 private:
-    void runProcess() override { m_func(); }
+    void runBootProcess() override { m_func(); }
     Func m_func;
 };
 

@@ -4,6 +4,7 @@
 #include <esp_event.h>
 #include <memory>
 #include <unordered_set>
+#include <functional>
 
 
 static constexpr struct
@@ -24,10 +25,21 @@ namespace events
     {
         esp_event_base_t base;
         int32_t id;
-        void* data;
+        void* data_untyped;
+
+        template<typename T>
+        [[nodiscard]] T data() const
+        {
+            return data_untyped ? *static_cast<const T*>(data_untyped) : T{};
+        }
+
+        [[nodiscard]] bool hasData() const
+        {
+            return data_untyped;
+        }
     };
 
-    using handler_t = void (*)(const Event&);
+    using handler_t = std::function<void(const Event&)>;
 
 
     struct Proxy
@@ -50,11 +62,11 @@ namespace events
         {
             if (m_isr)
             {
-                esp_event_isr_post(m_base, m_id, m_data, m_size, nullptr);
+                esp_event_isr_post(m_base, m_id, m_data->get(), m_data->size(), nullptr);
             }
             else
             {
-                esp_event_post(m_base, m_id, m_data, m_size, pdMS_TO_TICKS(10));
+                esp_event_post(m_base, m_id, m_data->get(), m_data->size(), pdMS_TO_TICKS(10));
             }
         }
 
@@ -64,16 +76,39 @@ namespace events
             return *this;
         }
 
-        auto& operator<<(const auto& data)
+        template <typename T>
+        auto& operator<<(const T& data)
         {
-            m_data = &data;
-            m_size = sizeof(decltype(data));
+            m_data = std::make_unique<TypedData<T>>(data);
             return *this;
         }
 
     private:
-        const void* m_data{};
-        size_t m_size{};
+        struct BaseData
+        {
+            virtual ~BaseData() = default;
+            [[nodiscard]] virtual const void* get() const = 0;
+            [[nodiscard]] virtual size_t size() const = 0;
+        };
+
+        struct EmptyData final : BaseData
+        {
+            [[nodiscard]] const void* get() const override { return nullptr; }
+            [[nodiscard]] size_t size() const override { return 0; }
+        };
+
+        template <typename T>
+        struct TypedData final : BaseData
+        {
+            T value;
+
+            explicit TypedData(const T& v) : value(v) {}
+            [[nodiscard]] const void* get() const override { return static_cast<const void*>(&value); }
+            [[nodiscard]] size_t size() const override { return sizeof(T); }
+        };
+
+        std::unique_ptr<BaseData> m_data = std::make_unique<EmptyData>();
+        int m_int = 0;
         bool m_isr = false;
     };
 
@@ -90,7 +125,7 @@ namespace events
 
         using InstancePtr = std::unique_ptr<Instance>;
 
-        auto& operator>>(handler_t handler) const
+        auto& operator>>(const handler_t& handler) const
         {
             auto& hi = *s_handlerInstances.emplace(std::make_unique<Instance>(nullptr, handler)).first;
             auto handler_arg = const_cast<void*>(static_cast<const void*>(&hi));
@@ -113,10 +148,13 @@ namespace events
 
         static void s_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* data)
         {
-            auto& hi = *static_cast<const InstancePtr*>(handler_arg);
-            if (auto it = s_handlerInstances.find(hi); it != s_handlerInstances.end())
+            if (handler_arg != nullptr)
             {
-                it->get()->handler({base, id, data});
+                auto& hi = *static_cast<const InstancePtr*>(handler_arg);
+                if (auto it = s_handlerInstances.find(hi); it != s_handlerInstances.end() && (*it)->handler)
+                {
+                    (*it)->handler({base, id, data});
+                }
             }
         }
     };
@@ -137,7 +175,7 @@ namespace events
             return {m_base, id};
         }
 
-        auto& operator>>(handler_t handler) const
+        auto& operator>>(const handler_t& handler) const
         {
             return ListenProxy::operator>>(handler);
         }
@@ -148,6 +186,7 @@ namespace events
 }
 
 using EventHandlerPtr = events::ListenProxy::InstancePtr;
+using Event_t = events::Event;
 
 
 #define EVENT_DEFINE(x) constexpr events::Base x{#x}

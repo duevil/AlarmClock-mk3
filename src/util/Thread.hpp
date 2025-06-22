@@ -48,6 +48,22 @@ struct Thread
     Thread(const Thread&) = delete;
 
     /**
+     * Suspends the thread task
+     */
+    void suspend() const
+    {
+        vTaskSuspend(m_task);
+    }
+
+    /**
+     * Resumes the thread task
+     */
+    void resume() const
+    {
+        vTaskResume(m_task);
+    }
+
+    /**
      * Deletes the thread task
      */
     virtual ~Thread()
