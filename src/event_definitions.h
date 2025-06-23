@@ -20,4 +20,22 @@ enum LIGHTS_EVENT_ID
 };
 
 
+//! Alarm events
+EVENT_DEFINE(ALARM_EVENT);
+
+enum ALARM_EVENT_ID
+{
+    //! Any alarm was triggered
+    TRIGGERED_ANY,
+    //! Alarm 1 was triggered
+    TRIGGERED_1,
+    //! Alarm 2 was triggerd
+    TRIGGERED_2,
+    //! The current alarm was snoozed
+    SNOOZED,
+    //! The current alarm was deactivated
+    DEACTIVATED
+};
+
+
 #endif //EVENT_DEFINITIONS_H

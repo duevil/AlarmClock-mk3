@@ -1,15 +1,14 @@
 #include <Arduino.h>
 
-#include "log.h"
-#include "util/events.hpp"
-#include "util/BootProcess.hpp"
-#include "util/Timer.hpp"
-#include "util/NVS.hpp"
-#include "pin_map.h"
-#include "event_definitions.h"
+#include "modules/lights_controller.h"
+#include "modules/matrix_controller.h"
+#include "modules/rtc_alarm_manager.h"
+
 #include "util/compile_datetime.h"
-#include "modules/MatrixController.hpp"
-#include "modules/LightsController.hpp"
+#include "event_definitions.h"
+#include "pin_map.h"
+#include "log.h"
+#include "matrix_font.h"
 
 
 EVENT_DEFINE(FOO_EVENT);
@@ -31,6 +30,9 @@ const FuncBootProcess bar2{"Bar 2", [] { LOG_I("Hello from Bar 2"); }};
 const FuncBootProcess bar3{"Bar 3", [] { LOG_I("Hello from Bar 3"); }};
 
 
+bool alarm_triggered = false;
+
+
 LightsController lights_controller;
 MatrixController matrix_controller{
     pins::matrix_cs,
@@ -39,7 +41,7 @@ MatrixController matrix_controller{
         auto now = time(nullptr);
         tm tm{};
         localtime_r(&now, &tm);
-        if (millis() > 30000) // when alarm is triggered
+        if (!alarm_triggered)
         {
             strftime(buf, size, "%R %S", &tm);
             // seconds are at index 6 and 7
@@ -66,6 +68,7 @@ MatrixController matrix_controller{
         strftime(buf, size, "%d. %b", &tm);
     }
 };
+RtcAlarmManager rtc;
 
 
 void test()
@@ -108,6 +111,11 @@ void setup()
             LOG_I("(boot %02d/%02d) %s", e.id + 1, BootProcess::count(), e.data<const char*>());
         }
     };
+    ALARM_EVENT >> TRIGGERED_ANY >> [](auto)
+    {
+        alarm_triggered = true;
+        LIGHTS_EVENT << SET_MAX;
+    };
 
     Timer::detached(20, [&x]
     {
@@ -122,6 +130,13 @@ void setup()
 
 
     delay(1000);
+
+
+    rtc.alarm1.setIn8h();
+    rtc.alarm2.hour = 8;
+    rtc.alarm2.minute = 30;
+    rtc.alarm2.enabled = true;
+    rtc.alarm2.repeat = 1 << 4;
 }
 
 void loop()

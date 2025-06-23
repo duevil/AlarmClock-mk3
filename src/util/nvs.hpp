@@ -1,9 +1,9 @@
 #ifndef NVS_VALUE_HPP
 #define NVS_VALUE_HPP
 
+#include <Preferences.h>
 #include "log.h"
 #include <unordered_set>
-#include <Preferences.h>
 
 
 /*!
@@ -34,9 +34,7 @@ struct NVS
         {
             assert(instance && "Found invalid NVS instance");
             if (instance)
-            {
                 instance->load();
-            }
         }
     }
 
@@ -62,15 +60,19 @@ constexpr bool is_nvs_type_v = true;
 
 
 /*!
- * @brief Class for storing a non-volatile value (NVV) in the non-volatile storage (NVS) using the Preferences API
+ * @brief Class for storing a non-volatile value (NVV) in the non-volatile storage (NVS) using the Preferences API with
+ * the possibility to attach observers to be called when the value is changed
  * @tparam T The type of the value to be stored
  * @note Changing the value of the NVV using the assignment operator automatically syncs the value with the NVS.
  * When changing the value using operations on a reference of a NVV,
  * it is necessary to manually call <code>sync()</code>.
+ * Observers will only be called on sync, but not on load.
  */
 template <typename T> requires is_nvs_type_v<T>
 struct NVV final : private NVS
 {
+    using Observer = std::function<void(const T&)>;
+
     /*!
      * @brief Constructor
      * @param name The name of the value to be stored in the NVS; must be 15 characters or fewer
@@ -110,6 +112,11 @@ struct NVV final : private NVS
         }
         LOG_D("Putting value for %s: %s", m_name, String(m_value).c_str());
         put();
+
+        for (const auto& observer : m_observers)
+        {
+            observer(m_value);
+        }
     }
 
     /*!
@@ -145,6 +152,24 @@ struct NVV final : private NVS
      */
     explicit operator T() const { return m_value; }
 
+    /**
+     * @brief Attach an observer to this value to be called when the value changes
+     * @param observer The observer to attach to this NVV
+     */
+    void observe(const auto& observer)
+    {
+        m_observers.emplace_back(observer);
+    }
+
+    /**
+     * @brief Remove an observer from the observer list of this value
+     * @param observer The observer to remove from this NVV
+     */
+    void observerRemove(const auto& observer)
+    {
+        std::erase(m_observers, observer);
+    }
+
     // Disable copy and move semantics
     NVV(const NVV&) = delete;
     NVV& operator=(const NVV&) = delete;
@@ -152,6 +177,7 @@ struct NVV final : private NVS
 private:
     T m_value{};
     const char* m_name;
+    std::vector<Observer> m_observers{};
 
     T get()
     {

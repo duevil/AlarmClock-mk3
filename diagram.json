@@ -84,7 +84,7 @@
       "top": 112.7,
       "left": 0.8,
       "rotate": 90,
-      "attrs": { "initTime": "0" }
+      "attrs": { "initTime": "now" }
     },
     {
       "type": "wokwi-max7219-matrix",
@@ -105,7 +105,7 @@
       "id": "btn4",
       "top": -89.8,
       "left": -201.6,
-      "attrs": { "color": "yellow", "xray": "", "key": "4" }
+      "attrs": { "color": "yellow", "xray": "", "key": "4", "bounce": "0" }
     }
   ],
   "connections": [

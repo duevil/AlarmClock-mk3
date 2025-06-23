@@ -27,7 +27,7 @@ namespace events
         int32_t id;
         void* data_untyped;
 
-        template<typename T>
+        template <typename T>
         [[nodiscard]] T data() const
         {
             return data_untyped ? *static_cast<const T*>(data_untyped) : T{};

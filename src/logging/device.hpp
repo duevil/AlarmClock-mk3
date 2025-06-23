@@ -1,7 +1,7 @@
 #ifndef DEVICE_HPP
 #define DEVICE_HPP
 
-#include "Entry.hpp"
+#include "entry.hpp"
 
 
 namespace logging

@@ -8,6 +8,7 @@ namespace pins
 {
     MAP_PIN(13, lights);
     MAP_PIN(25, matrix_cs);
+    MAP_PIN(34, alarm_interrupt)
 }
 
 

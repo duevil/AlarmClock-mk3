@@ -2,6 +2,7 @@
 #define BOOT_PROCESS_HPP
 
 #include "events.hpp"
+#include <queue>
 
 
 //! Event posted when a boot process completes
@@ -62,6 +63,11 @@ struct BootProcess
     {
         return s_counter;
     }
+
+    // delete copy constructor and assignment operator
+
+    BootProcess(const BootProcess&) = delete;
+    BootProcess& operator=(const BootProcess&) = delete;
 
 protected:
     virtual void runBootProcess() = 0;

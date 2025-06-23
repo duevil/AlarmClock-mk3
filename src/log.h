@@ -1,8 +1,8 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "logging/Logger.hpp"
-#include "logging/Serial.hpp"
+#include "logging/logger.hpp"
+#include "logging/serial.hpp"
 
 #define LOG_ENTRY(level, format, ...) logging::Entry{level, __FILE__, __LINE__, __func__, format __VA_OPT__(,) __VA_ARGS__}
 

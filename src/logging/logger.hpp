@@ -1,9 +1,9 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
-#include "Device.hpp"
-#include "util/BlockingQueue.hpp"
-#include <util/Thread.hpp>
+#include "device.hpp"
+#include "util/blocking_queue.hpp"
+#include "util/thread.hpp"
 #include <memory>
 #include <ranges>
 #include <algorithm>

@@ -1,7 +1,7 @@
 #ifndef SERIAL_HPP
 #define SERIAL_HPP
 
-#include "Device.hpp"
+#include "device.hpp"
 
 
 namespace logging

@@ -1,5 +1,5 @@
-#ifndef THREAD_HPP
-#define THREAD_HPP
+#ifndef THREAD_H
+#define THREAD_H
 
 #ifndef THREAD_DEFAULT_STACK_SIZE
 #define THREAD_DEFAULT_STACK_SIZE 2048
@@ -104,4 +104,4 @@ private:
 };
 
 
-#endif //THREAD_HPP
+#endif //THREAD_H
