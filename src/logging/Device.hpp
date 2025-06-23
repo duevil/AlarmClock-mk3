@@ -40,23 +40,28 @@ namespace logging
 
             if ((m_format & TIMESTAMP_FULL) == TIMESTAMP_FULL)
             {
-                // print timestamp as YYYY-MM-DD HH:MM:SS
-                auto tm = localtime(&entry.timestamp);
+                // print timestamp as YYYY-MM-DD HH:MM:SS.sss
+                tm tm{};
+                gmtime_r(&entry.timestamp.tv_sec, &tm);
                 char buf[32]{};
-                strftime(buf, sizeof(buf), "%FT%T%z ", tm);
+                char* tmp;
+                asprintf(&tmp, "%%F %%T.%03lld ", entry.timestamp.tv_usec / 1000LL);
+                strftime(buf, sizeof(buf), tmp, &tm);
+                free(tmp);
                 *this << buf;
             }
             else if (m_format & TIMESTAMP_SIMPLE)
             {
-                // print timestamp in seconds
-                printf("%010lli ", entry.timestamp);
+                // print timestamp in [seconds].[milliseconds]
+                printf("%010lld.%03lld ", entry.timestamp.tv_sec, entry.timestamp.tv_usec / 1000LL);
             }
             else if (m_format & TIMESTAMP_SHORT)
             {
                 // print timestamp as HH:MM:SS
-                auto tm = localtime(&entry.timestamp);
+                tm tm{};
+                gmtime_r(&entry.timestamp.tv_sec, &tm);
                 char buf[10]{};
-                strftime(buf, sizeof(buf), "%T ", tm);
+                strftime(buf, sizeof(buf), "%T ", &tm);
                 *this << buf;
             }
 

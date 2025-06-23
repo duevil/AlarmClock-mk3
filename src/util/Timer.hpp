@@ -28,14 +28,14 @@ struct Timer
         }
     }
 
-    bool once(uint16_t seconds, const callback_t& callback)
+    bool once(uint16_t seconds, const callback_t& callback, bool start = false)
     {
-        return create(seconds, callback, pdFALSE);
+        return create(seconds, callback, pdFALSE, start);
     }
 
-    bool always(uint16_t seconds, const callback_t& callback)
+    bool always(uint16_t seconds, const callback_t& callback, bool start = false)
     {
-        return create(seconds, callback, pdTRUE);
+        return create(seconds, callback, pdTRUE, start);
     }
 
     void stop() const
@@ -92,7 +92,7 @@ private:
         }
     }
 
-    bool create(uint16_t seconds, const callback_t& callback, BaseType_t reload)
+    bool create(uint16_t seconds, const callback_t& callback, BaseType_t reload, bool start)
     {
         if (m_timer)
         {
@@ -100,11 +100,11 @@ private:
         }
         m_timer = xTimerCreate(nullptr, pdMS_TO_TICKS(seconds * 1000), reload, nullptr, s_callback);
         s_callbacks.emplace(m_timer, callback);
-        if (m_timer)
+        if (start && m_timer)
         {
-            return xTimerStart(m_timer, 0) == pdTRUE;
+            xTimerStart(m_timer, 0);
         }
-        return false;
+        return m_timer;
     }
 };
 

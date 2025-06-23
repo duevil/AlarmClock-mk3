@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include "log.h"
 #include "util/events.hpp"
 #include "util/BootProcess.hpp"
@@ -6,6 +7,8 @@
 #include "util/NVS.hpp"
 #include "pin_map.h"
 #include "event_definitions.h"
+#include "util/compile_datetime.h"
+#include "modules/MatrixController.hpp"
 #include "modules/LightsController.hpp"
 
 
@@ -28,7 +31,41 @@ const FuncBootProcess bar2{"Bar 2", [] { LOG_I("Hello from Bar 2"); }};
 const FuncBootProcess bar3{"Bar 3", [] { LOG_I("Hello from Bar 3"); }};
 
 
-LightsController lightsController;
+LightsController lights_controller;
+MatrixController matrix_controller{
+    pins::matrix_cs,
+    [](char* buf, size_t size)
+    {
+        auto now = time(nullptr);
+        tm tm{};
+        localtime_r(&now, &tm);
+        if (millis() > 30000) // when alarm is triggered
+        {
+            strftime(buf, size, "%R %S", &tm);
+            // seconds are at index 6 and 7
+            matrix_font_to_subscript(buf[6]);
+            matrix_font_to_subscript(buf[7]);
+        }
+        else
+        {
+            const char* fmt;
+            if (auto ms = millis() % 1000; ms < 250)
+                fmt = "%R $   ";
+            else if (ms < 500 || ms >= 750)
+                fmt = "%R  #  ";
+            else
+                fmt = "%R   $ ";
+            strftime(buf, size, fmt, &tm);
+        }
+    },
+    [](char* buf, size_t size)
+    {
+        auto now = time(nullptr);
+        tm tm{};
+        localtime_r(&now, &tm);
+        strftime(buf, size, "%d. %b", &tm);
+    }
+};
 
 
 void test()
@@ -37,14 +74,17 @@ void test()
     LOG_T("millis: %lu", millis());
 }
 
-const ThreadFunc<typeof(&test), 2048> tTest{test, {.name = "test", .priority = 10}};
+const FuncThread tTest{&test, {.name = "test", .priority = 10}};
+Timer scroll_matrix_timer{};
 
 
 void setup()
 {
+    set_internal_rtc_from_compile_datetime();
+
     using namespace logging;
 #ifdef ENV_DEBUG
-    Logger.registerDevice<SerialLog>(Level::DEBUG, DEFAULT_FORMAT ^ LEVEL_SHORT | LEVEL_LETTER);
+    Logger.registerDevice<SerialLog>(Level::TRACE, DEFAULT_FORMAT ^ LEVEL_SHORT | LEVEL_LETTER);
 #endif
 
     NVS::begin("alarm_clock");
@@ -74,6 +114,8 @@ void setup()
         LOG_D("Event handler unregistered");
         FOO_EVENT.unregister(x);
     });
+
+    scroll_matrix_timer.always(20, [] { matrix_controller.scrollNext(); }, true);
 
 
     BootProcess::runAll();

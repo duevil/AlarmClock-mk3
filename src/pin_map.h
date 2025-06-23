@@ -6,7 +6,8 @@
 
 namespace pins
 {
-    MAP_PIN(13, LIGHTS);
+    MAP_PIN(13, lights);
+    MAP_PIN(25, matrix_cs);
 }
 
 

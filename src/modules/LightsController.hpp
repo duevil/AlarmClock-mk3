@@ -6,7 +6,7 @@ namespace lights
 {
     struct
     {
-        uint8_t pin = pins::LIGHTS;
+        uint8_t pin = pins::lights;
         uint32_t freq = 5000;
         uint8_t resolution = 13;
         uint16_t fade_time = 250;
@@ -15,10 +15,11 @@ namespace lights
     } constexpr c_config{};
 
 
-    struct Controller final : BootProcess, Thread<1024>
+    class Controller final : BootProcess, Thread<1024>
     {
+    public:
         Controller() : BootProcess("Lights initialized"),
-                       Thread({.name = "lights", .priority = 10, .coreId = APP_CPU_NUM}) {}
+                       Thread({.name = "lights", .priority = 5, .coreId = APP_CPU_NUM}) {}
 
         [[nodiscard]] uint8_t getCurrentValue() const
         {
@@ -47,16 +48,23 @@ namespace lights
             LIGHTS_EVENT >> SET_OFF >> [this](auto) { off(); };
             LIGHTS_EVENT >> SET_VALUE >> [this](const Event_t& e) { set(e.data<uint8_t>()); };
 
-            m_autoOffTimer.once(*m_autoOffDuration * 60, [] { LIGHTS_EVENT << SET_OFF; });
+            //m_autoOffTimer.once(*m_autoOffDuration * 60, [] { LIGHTS_EVENT << SET_OFF; });
         }
 
         void run() override
         {
             if (m_current != m_target)
             {
-                delayMicroseconds(c_config.fade_time * 1000 / _abs(static_cast<int64_t>(m_target) - m_current));
-                m_current < m_target ? ++m_current : --m_current;
+#ifdef WOKWI
+                // WOKWI simulation can't handle fading
+                m_current = m_target;
                 ledcWrite(c_config.pin, m_current);
+#else
+                ledcFade(c_config.pin, m_current, m_target, c_config.fade_time);
+                m_current = m_target;
+                //delayMicroseconds(c_config.fade_time * 1000 / _abs(static_cast<int64_t>(m_target) - m_current));
+                //m_current < m_target ? ++m_current : --m_current;
+#endif
             }
             else
             {

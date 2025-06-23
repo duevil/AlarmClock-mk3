@@ -15,13 +15,13 @@
 
 namespace logging
 {
-    inline struct Logger final : Thread<2048>
+    inline struct Logger final : Thread<>
     {
         Logger() : Thread({.name = "logging", .coreId = PRO_CPU_NUM}) {}
 
         template <typename TDevice> requires std::is_base_of_v<Device, TDevice>
         bool registerDevice(Level level = DEFAULT_LEVEL, int format = DEFAULT_FORMAT,
-                            Device** handle = nullptr, auto... args)
+                            Device** handle = nullptr, auto&&... args)
         {
             auto device = std::make_unique<TDevice>(level, format, std::forward<decltype(args)>(args)...);
             if (device != nullptr && device->initialize())

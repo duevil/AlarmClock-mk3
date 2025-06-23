@@ -6,11 +6,11 @@
 
 namespace logging
 {
-    constexpr auto MAX_MSG_LEN = 228;
+    constexpr auto MAX_MSG_LEN = 220;
 
     struct Entry
     {
-        time_t timestamp;
+        timeval timestamp;
         Level level;
         const char* file;
         uint32_t line;
@@ -18,14 +18,18 @@ namespace logging
         TaskHandle_t task;
         char message[MAX_MSG_LEN];
 
-        Entry(): timestamp(0), level(), file(nullptr), line(0), function(nullptr), task(nullptr), message() {}
+        Entry(): timestamp(), level(), file(nullptr), line(0), function(nullptr), task(nullptr), message() {}
 
-        Entry(Level level, const char* file, uint32_t line, const char* function, const char* format, auto... args)
-            : timestamp(time(nullptr)), level(level), file(file),
+        Entry(Level level, const char* file, uint32_t line, const char* function, const char* format, auto&&... args)
+            : timestamp(), level(level), file(file),
               line(line), function(function), task(xTaskGetCurrentTaskHandle()),
               message()
         {
-            snprintf(message, MAX_MSG_LEN, format, args...);
+            gettimeofday(&timestamp, nullptr);
+            if (format)
+            {
+                snprintf(message, MAX_MSG_LEN, format, std::forward<decltype(args)>(args)...);
+            }
         }
     };
 }

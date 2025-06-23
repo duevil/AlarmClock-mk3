@@ -2,7 +2,7 @@
 #define THREAD_HPP
 
 #ifndef THREAD_DEFAULT_STACK_SIZE
-#define THREAD_DEFAULT_STACK_SIZE 4096
+#define THREAD_DEFAULT_STACK_SIZE 2048
 #endif
 
 
@@ -33,10 +33,10 @@ template <size_t STACK = THREAD_DEFAULT_STACK_SIZE>
 struct Thread
 {
     /**
-     * Creates a new thread task with the given name
+     * Creates a new thread task with the given configuration
      * @param cfg Thread configuration
      */
-    explicit Thread(const ThreadCfg &cfg = {})
+    explicit Thread(const ThreadCfg& cfg = {})
     {
         // ReSharper disable once CppDFAEndlessLoop
         m_task =
@@ -44,8 +44,10 @@ struct Thread
                                           cfg.name, STACK, this, cfg.priority, m_taskStack, &m_taskBuf, cfg.coreId);
     }
 
-    // deleted copy constructor
-    Thread(const Thread&) = delete;
+    virtual ~Thread()
+    {
+        vTaskDelete(m_task);
+    }
 
     /**
      * Suspends the thread task
@@ -63,13 +65,8 @@ struct Thread
         vTaskResume(m_task);
     }
 
-    /**
-     * Deletes the thread task
-     */
-    virtual ~Thread()
-    {
-        vTaskDelete(m_task);
-    }
+    // deleted copy constructor
+    Thread(const Thread&) = delete;
 
 protected:
     /**
@@ -85,23 +82,25 @@ private:
 
 
 /**
- * Implementation of Thread allowing the use of a lambda or function pointer as the task function
+ * Implementation of Thread storing a callable object to be used as the thread function
  *
- * @tparam TFunc Function argument type
  * @tparam STACK Stack size
  */
-template <typename TFunc, size_t STACK = THREAD_DEFAULT_STACK_SIZE>
-struct ThreadFunc final : Thread<STACK>
+template <typename T, size_t STACK = THREAD_DEFAULT_STACK_SIZE>
+struct FuncThread final : Thread<STACK>
 {
-    explicit ThreadFunc(TFunc func, const ThreadCfg &cfg = {}) : Thread<STACK>(cfg), m_func(func) {}
-
-    ThreadFunc(const ThreadFunc&) = delete;
+    /**
+     * Creates a new thread task using the given function and configuration
+     * @param func Thread function
+     * @param cfg Thread configuration
+     */
+    explicit FuncThread(T&& func, const ThreadCfg& cfg = {}) : Thread<STACK>(cfg), m_func(std::forward<T>(func)) {}
 
 protected:
     void run() override { m_func(); }
 
 private:
-    TFunc m_func;
+    T m_func{};
 };
 
 
