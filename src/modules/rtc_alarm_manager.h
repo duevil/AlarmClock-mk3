@@ -26,6 +26,12 @@ public:
     Alarm& alarm2{m_alarm_2};
 
     /**
+     * Check if either alarm 1 or alarm 2 was triggered
+     * @return true if any alarm was triggered
+     */
+    [[nodiscard]] bool anyAlarmTriggered();
+
+    /**
      * Update the internal RTC with the time from the external RTC
      */
     void setInternalFromExternal();

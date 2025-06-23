@@ -165,14 +165,16 @@ namespace events
         // ReSharper disable once CppDFAConstantParameter
         constexpr explicit Base(esp_event_base_t base) : ListenProxy(base, ESP_EVENT_ANY_ID) {}
 
-        PostProxy operator<<(int32_t id) const
+        template <typename T> requires std::is_integral_v<T> || std::is_enum_v<T>
+        PostProxy operator<<(T id) const
         {
-            return {m_base, id};
+            return {m_base, static_cast<int32_t>(id)};
         }
 
-        ListenProxy operator>>(int32_t id) const
+        template <typename T> requires std::is_integral_v<T> || std::is_enum_v<T>
+        ListenProxy operator>>(T id) const
         {
-            return {m_base, id};
+            return {m_base, static_cast<int32_t>(id)};
         }
 
         auto& operator>>(const handler_t& handler) const

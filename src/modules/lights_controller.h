@@ -15,8 +15,18 @@
 class LightsController final : BootProcess, Thread<1024>
 {
 public:
-    LightsController() : BootProcess("Lights initialized"),
-                         Thread({.name = "lights", .priority = 5, .coreId = APP_CPU_NUM}) {}
+    struct Config
+    {
+        uint8_t pin;
+        uint8_t resolution;
+        uint32_t freq;
+        uint16_t fade_time;
+        float gamma;
+    };
+
+    explicit LightsController(Config cfg) : BootProcess("Lights initialized"),
+                                   Thread({.name = "lights", .priority = 5, .coreId = APP_CPU_NUM}),
+                                   m_cfg(cfg) {}
 
     /**
      * Get the current light value
@@ -46,6 +56,7 @@ private:
     uint32_t m_current = 0;
     NVV<uint8_t> m_autoOffDuration{"light_duration"};
     Timer m_autoOffTimer;
+    Config m_cfg;
 };
 
 

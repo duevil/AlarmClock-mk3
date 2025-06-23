@@ -3,6 +3,7 @@
 #include "modules/lights_controller.h"
 #include "modules/matrix_controller.h"
 #include "modules/rtc_alarm_manager.h"
+#include "modules/input_handler.h"
 
 #include "util/compile_datetime.h"
 #include "event_definitions.h"
@@ -11,29 +12,10 @@
 #include "matrix_font.h"
 
 
-EVENT_DEFINE(FOO_EVENT);
-
-
-const struct : BootProcess
-{
-    using BootProcess::BootProcess;
-
-    void runBootProcess() override
-    {
-        LOG_I("Hello World");
-        FOO_EVENT << 3;
-    }
-} foo{"Foo initialized"};
-
-const FuncBootProcess bar1{"Bar 1", [] { LOG_I("Hello from Bar 1"); }};
-const FuncBootProcess bar2{"Bar 2", [] { LOG_I("Hello from Bar 2"); }};
-const FuncBootProcess bar3{"Bar 3", [] { LOG_I("Hello from Bar 3"); }};
-
-
-bool alarm_triggered = false;
-
-
-LightsController lights_controller;
+LightsController lights_controller{
+    {.pin = pins::lights, .resolution = 13, .freq = 5000, .fade_time = 250, .gamma = 2.2f}
+};
+RtcAlarmManager rtc;
 MatrixController matrix_controller{
     pins::matrix_cs,
     [](char* buf, size_t size)
@@ -41,7 +23,7 @@ MatrixController matrix_controller{
         auto now = time(nullptr);
         tm tm{};
         localtime_r(&now, &tm);
-        if (!alarm_triggered)
+        if (!rtc.anyAlarmTriggered())
         {
             strftime(buf, size, "%R %S", &tm);
             // seconds are at index 6 and 7
@@ -68,17 +50,7 @@ MatrixController matrix_controller{
         strftime(buf, size, "%d. %b", &tm);
     }
 };
-RtcAlarmManager rtc;
-
-
-void test()
-{
-    delay(1000);
-    LOG_T("millis: %lu", millis());
-}
-
-const FuncThread tTest{&test, {.name = "test", .priority = 10}};
-Timer scroll_matrix_timer{};
+InputHandler input_handler{pins::button_left, pins::button_middle, pins::button_right};
 
 
 void setup()
@@ -94,41 +66,23 @@ void setup()
 
     events::init();
     events::GLOBAL >> [](const Event_t& e) { LOG_D("Event posted: %s #%d", e.base, e.id); };
-
-    auto& x = FOO_EVENT >> [](const Event_t& e) { LOG_I("%s #%d", e.base, e.id); };
-    FOO_EVENT >> 2 >> [](const Event_t& e)
-    {
-        LOG_W("%s #%d - %lu", e.base, e.id, e.data<uint32_t>());
-    };
     BOOT_EVENT >> [](const Event_t& e)
     {
         if (e.id == BootProcess::EVENT_ALL_COMPLETED)
-        {
             LOG_I("(boot) completed");
-        }
         else
-        {
             LOG_I("(boot %02d/%02d) %s", e.id + 1, BootProcess::count(), e.data<const char*>());
-        }
     };
-    ALARM_EVENT >> TRIGGERED_ANY >> [](auto)
-    {
-        alarm_triggered = true;
-        LIGHTS_EVENT << SET_MAX;
-    };
-
-    Timer::detached(20, [&x]
-    {
-        LOG_D("Event handler unregistered");
-        FOO_EVENT.unregister(x);
-    });
-
-    scroll_matrix_timer.always(20, [] { matrix_controller.scrollNext(); }, true);
+    ALARM_EVENT >> TRIGGERED_ANY >> [](auto) { LIGHTS_EVENT << SET_MAX; };
+    INPUT_EVENT >> CLICK_LEFT >> [](auto) { matrix_controller.scrollPrev(); };
+    INPUT_EVENT >> CLICK_MIDDLE >> [](auto) { ALARM_EVENT << DEACTIVATE; };
+    INPUT_EVENT >> CLICK_RIGHT >> [](auto) { matrix_controller.scrollNext(); };
+    INPUT_EVENT >> LONG_PRESS_LEFT >> [](auto) { LIGHTS_EVENT << SET_OFF; };
+    INPUT_EVENT >> LONG_PRESS_MIDDLE >> [](auto) { LIGHTS_EVENT << SET_VALUE << 50; };
+    INPUT_EVENT >> LONG_PRESS_RIGHT >> [](auto) { LIGHTS_EVENT << SET_MAX; };
 
 
     BootProcess::runAll();
-
-
     delay(1000);
 
 
@@ -141,12 +95,5 @@ void setup()
 
 void loop()
 {
-    static uint8_t lightValue = 50;
-
-    delay(2000);
-    FOO_EVENT << 1;
-    delay(3000);
-    FOO_EVENT << 2 << millis();
-    LIGHTS_EVENT << SET_VALUE << lightValue;
-    lightValue = (lightValue + 10) % 110;
+    delay(1000);
 }

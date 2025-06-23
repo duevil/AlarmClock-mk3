@@ -6,6 +6,11 @@
 
 RtcAlarmManager::RtcAlarmManager(): BootProcess("Rtc initialized") {}
 
+bool RtcAlarmManager::anyAlarmTriggered()
+{
+    return m_rtc.alarmTriggered(URTCLIB_ALARM_ANY);
+}
+
 void RtcAlarmManager::setInternalFromExternal()
 {
     m_rtc.refresh();
@@ -102,7 +107,7 @@ void RtcAlarmManager::runBootProcess()
 
         m_deactivate_timer.reset();
     };
-    ALARM_EVENT >> SNOOZED >> [this](auto)
+    ALARM_EVENT >> SNOOZE >> [this](auto)
     {
         auto now = time(nullptr);
         now += 30 * 60;
@@ -118,8 +123,10 @@ void RtcAlarmManager::runBootProcess()
             m_rtc.alarmClearFlag(URTCLIB_ALARM_2);
             m_alarm_2.setAt(now);
         }
+
+        m_deactivate_timer.stop();
     };
-    ALARM_EVENT >> DEACTIVATED >> [this](auto)
+    ALARM_EVENT >> DEACTIVATE >> [this](auto)
     {
         if (m_rtc.alarmTriggered(URTCLIB_ALARM_1))
         {
@@ -140,10 +147,12 @@ void RtcAlarmManager::runBootProcess()
             else
                 m_alarm_2.enabled = false;
         }
+
+        m_deactivate_timer.stop();
     };
 
 
-    m_deactivate_timer.once(1800, [] { ALARM_EVENT << DEACTIVATED; });
+    m_deactivate_timer.once(1800, [] { ALARM_EVENT << DEACTIVATE; });
     m_update_timer.always(3600, [this] { setInternalFromExternal(); });
 
 

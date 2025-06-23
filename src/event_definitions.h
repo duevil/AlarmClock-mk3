@@ -31,10 +31,36 @@ enum ALARM_EVENT_ID
     TRIGGERED_1,
     //! Alarm 2 was triggerd
     TRIGGERED_2,
-    //! The current alarm was snoozed
-    SNOOZED,
-    //! The current alarm was deactivated
-    DEACTIVATED
+    //! Set the current alarm to snooze
+    SNOOZE,
+    //! Deactivate the current alarm
+    DEACTIVATE
+};
+
+
+//! Input events
+EVENT_DEFINE(INPUT_EVENT);
+
+enum INPUT_EVENT_ID
+{
+    //! The left button was clicked
+    CLICK_LEFT,
+    //! The left button was long pressed
+    LONG_PRESS_LEFT,
+    //! The left button was released after a long press
+    LONG_RELEASE_LEFT,
+    //! The middle button was clicked
+    CLICK_MIDDLE,
+    //! The middle button was long pressed
+    LONG_PRESS_MIDDLE,
+    //! The middle button was released after a long press
+    LONG_RELEASE_MIDDLE,
+    //! The right button was clicked
+    CLICK_RIGHT,
+    //! The right button was long pressed
+    LONG_PRESS_RIGHT,
+    //! The right button was released after a long press
+    LONG_RELEASE_RIGHT,
 };
 
 
