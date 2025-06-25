@@ -170,7 +170,8 @@ struct NVV final : private NVS
         std::erase(m_observers, observer);
     }
 
-    // Disable copy and move semantics
+    // delete copy constructor and assignment operator
+
     NVV(const NVV&) = delete;
     NVV& operator=(const NVV&) = delete;
 

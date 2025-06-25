@@ -1,5 +1,7 @@
 #include "rtc_alarm_manager.h"
 
+#include <util/compile_datetime.h>
+
 #include "event_definitions.h"
 #include "pin_map.h"
 
@@ -69,8 +71,27 @@ void RtcAlarmManager::setExternalFromInternal()
     LOG_I("External rtc updated to: %s", buf);
 }
 
+NVV<String>& RtcAlarmManager::timezone()
+{
+    return m_timezone;
+}
+
 void RtcAlarmManager::runBootProcess()
 {
+    set_internal_rtc_from_compile_datetime();
+
+
+    auto&& set_timezone = [](const String& tz)
+    {
+        LOG_I("System timezone set to: %s", tz.c_str());
+        setenv("TZ", tz.c_str(), 1);
+        tzset();
+    };
+    m_timezone.observe(set_timezone);
+    if (*m_timezone)
+        set_timezone(*m_timezone);
+
+
     Wire.begin();
 #ifdef WOKWI
     m_rtc.set_model(URTCLIB_MODEL_DS1307);
@@ -88,6 +109,7 @@ void RtcAlarmManager::runBootProcess()
     m_rtc.disable32KOut();
     m_rtc.alarmClearFlag(URTCLIB_ALARM_1);
     m_rtc.alarmClearFlag(URTCLIB_ALARM_2);
+
     setInternalFromExternal();
 
 
@@ -186,6 +208,11 @@ void RtcAlarmManager::Alarm::setIn8h()
     computeNextAndSet();
 }
 
+time_t RtcAlarmManager::Alarm::next() const
+{
+    return m_next;
+}
+
 RtcAlarmManager::Alarm::Alarm(const char* key_hour, const char* key_minute, const char* key_repeat,
                               const char* key_sound, const char* key_enabled, RtcAlarmManager& mgr,
                               uint8_t id): hour(key_hour),
@@ -198,18 +225,27 @@ RtcAlarmManager::Alarm::Alarm(const char* key_hour, const char* key_minute, cons
 {
     hour.observe([this](auto)
     {
-        enabled = true;
-        computeNextAndSet();
+        if (!m_no_compute)
+        {
+            enabled = true;
+            computeNextAndSet();
+        }
     });
     minute.observe([this](auto)
     {
-        enabled = true;
-        computeNextAndSet();
+        if (!m_no_compute)
+        {
+            enabled = true;
+            computeNextAndSet();
+        }
     });
     repeat.observe([this](auto)
     {
-        enabled = true;
-        computeNextAndSet();
+        if (!m_no_compute)
+        {
+            enabled = true;
+            computeNextAndSet();
+        }
     });
     enabled.observe([this](auto)
     {
@@ -235,7 +271,7 @@ void RtcAlarmManager::Alarm::setAt(const time_t& t) const
 void RtcAlarmManager::Alarm::set()
 {
     if (*enabled)
-        setAt(next);
+        setAt(m_next);
     else if (m_id == 1)
         m_mgr.m_rtc.alarmDisable(URTCLIB_ALARM_1);
     else if (m_id == 2)
@@ -262,7 +298,7 @@ void RtcAlarmManager::Alarm::computeNextAndSet()
     tm.tm_hour = *hour;
     tm.tm_min = *minute;
     tm.tm_sec = 0;
-    m_next = mktime(&tm) + days_increment * 86400;
+    m_next = mktime(&tm) + days_increment * 86400LL;
 
     set();
 }

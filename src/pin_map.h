@@ -24,6 +24,9 @@ namespace pins
     MAP_PIN(36, button_left)
     MAP_PIN(39, button_middle)
     MAP_PIN(35, button_right)
+    MAP_PIN(8, ui_display_cs);
+    MAP_PIN(7, ui_display_dc);
+    MAP_PIN(4, ui_display_rst);
 }
 
 

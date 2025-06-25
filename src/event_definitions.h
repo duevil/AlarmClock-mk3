@@ -4,22 +4,6 @@
 #include "util/events.hpp"
 
 
-//! Events for controlling the lights
-EVENT_DEFINE(LIGHTS_EVENT);
-
-enum LIGHTS_EVENT_ID
-{
-    //! Turn the lights off
-    SET_OFF,
-    //! Turn the lights to their maximum brightness
-    SET_MAX,
-    //! Set the lights to the value provided in the event data (in %)
-    SET_VALUE,
-    //! Lights fading has completed
-    FADE_DONE
-};
-
-
 //! Alarm events
 EVENT_DEFINE(ALARM_EVENT);
 
@@ -49,18 +33,24 @@ enum INPUT_EVENT_ID
     LONG_PRESS_LEFT,
     //! The left button was released after a long press
     LONG_RELEASE_LEFT,
+    //! Fires repeatedly after the left button was long pressed
+    REPEATING_LEFT,
     //! The middle button was clicked
     CLICK_MIDDLE,
     //! The middle button was long pressed
     LONG_PRESS_MIDDLE,
     //! The middle button was released after a long press
     LONG_RELEASE_MIDDLE,
+    //! Fires repeatedly after the middle button was long pressed
+    REPEATING_MIDDLE,
     //! The right button was clicked
     CLICK_RIGHT,
     //! The right button was long pressed
     LONG_PRESS_RIGHT,
     //! The right button was released after a long press
     LONG_RELEASE_RIGHT,
+    //! Fires repeatedly after the right button was long pressed
+    REPEATING_RIGHT,
 };
 
 

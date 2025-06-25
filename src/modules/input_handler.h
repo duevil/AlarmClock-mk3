@@ -29,9 +29,17 @@ public:
 private:
     void runBootProcess() override;
 
-    GPIOButton<> m_btn_l;
-    GPIOButton<> m_btn_m;
-    GPIOButton<> m_btn_r;
+    enum button_id { left, middle, right };
+
+    template <button_id>
+    struct EventPolicy
+    {
+        void event(ESPButton::event_t e, EventMsg* msg);
+    };
+
+    GPIOButton<EventPolicy<left>> m_btn_l;
+    GPIOButton<EventPolicy<middle>> m_btn_m;
+    GPIOButton<EventPolicy<right>> m_btn_r;
 };
 
 

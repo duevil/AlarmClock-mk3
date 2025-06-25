@@ -41,6 +41,12 @@ public:
      */
     void setExternalFromInternal();
 
+    /**
+     * Get an accessor the system timezone represented as POSIX TZ string
+     * @return Reference to the timezone value
+     */
+    [[nodiscard]] NVV<String> &timezone();
+
     // delete copy constructor and assignment operator
 
     RtcAlarmManager(const RtcAlarmManager&) = delete;
@@ -77,12 +83,17 @@ private:
          * Controls whether the alarm is enabled; changing the value will either set or disable the alarm
          */
         NVV<bool> enabled;
-        const time_t& next{m_next};
 
         /**
          * Set the alarm time to trigger in 8 hours from now
          */
         void setIn8h();
+
+        /**
+         * Get the next time the alarm will ring at (if enabled)
+         * @return Epoch timestamp (UTC) the alarm will next trigger at
+         */
+        [[nodiscard]] time_t next() const;
 
     private:
         friend class RtcAlarmManager;
@@ -106,23 +117,24 @@ private:
 
     uRTCLib m_rtc;
     Alarm m_alarm_1{
-        "a1_hour",
-        "a1_minute",
-        "a1_repeat",
-        "a1_sound",
-        "a1_enabled",
+        "a1hour",
+        "a1minute",
+        "a1repeat",
+        "a1sound",
+        "a1enabled",
         *this, 1
     };
     Alarm m_alarm_2{
-        "a2_hour",
-        "a2_minute",
-        "a2_repeat",
-        "a2_sound",
-        "a2_enabled",
+        "a2hour",
+        "a2minute",
+        "a2repeat",
+        "a2sound",
+        "a2enabled",
         *this, 2
     };
     Timer m_update_timer;
     Timer m_deactivate_timer;
+    NVV<String> m_timezone{"timezone"};
 };
 
 

@@ -13,8 +13,6 @@ struct ThreadCfg
 {
     //!The name to be assigned to this task
     const char* name = nullptr;
-    //! The size of the task's stack
-    int stackSize = THREAD_DEFAULT_STACK_SIZE;
     //! The priority of the task; defaults to idle priority
     int priority = tskIDLE_PRIORITY;
     //! The core for the task to be pinned to; defaults to no affinity

@@ -31,6 +31,8 @@ struct BlockingQueue
 template <size_t Capacity, typename T>
 struct ESPQueue final : BlockingQueue<Capacity, T>
 {
+    using value_type = T;
+
     /**
      * Creates a new static FreeRTOS queue
      */

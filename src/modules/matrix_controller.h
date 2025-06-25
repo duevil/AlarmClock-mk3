@@ -91,7 +91,7 @@ private:
     struct Tab
     {
         uint8_t index;
-        std::function<void(char*, size_t)> textSupplier;
+        void (*textSupplier)(char*, size_t);
     };
 
     static constexpr uint8_t c_scroll_spacing{32};
