@@ -55,7 +55,7 @@ void LightsController::runBootProcess()
 
 #ifndef WOKWI
     // WOKWI doesn't like this timer :(
-    m_autoOffTimer.once(*m_autoOffDuration * 60, [] { LIGHTS_EVENT << SET_OFF; });
+    m_autoOffTimer.once(*m_autoOffDuration * 60, [this] { off(); });
 #endif
     m_autoOffDuration.observe([this](uint8_t duration) { m_autoOffTimer.changePeriod(duration * 60); });
 }
@@ -69,7 +69,7 @@ void LightsController::run()
         m_current = m_target;
         ledcWrite(m_cfg.pin, m_current);
 #else
-                ledcFade(c_config.pin, m_current, m_target, c_config.fade_time);
+                ledcFade(m_cfg.pin, m_current, m_target, m_cfg.fade_time);
                 m_current = m_target;
                 //delayMicroseconds(c_config.fade_time * 1000 / _abs(static_cast<int64_t>(m_target) - m_current));
                 //m_current < m_target ? ++m_current : --m_current;

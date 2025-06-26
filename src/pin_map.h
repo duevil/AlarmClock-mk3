@@ -27,6 +27,9 @@ namespace pins
     MAP_PIN(8, ui_display_cs);
     MAP_PIN(7, ui_display_dc);
     MAP_PIN(4, ui_display_rst);
+    MAP_PIN(12, i2s_data);
+    MAP_PIN(27, i2s_bck);
+    MAP_PIN(33, i2s_lrc);
 }
 
 

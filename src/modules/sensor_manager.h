@@ -3,6 +3,8 @@
 
 #include "util/boot_process.hpp"
 #include "util/thread.hpp"
+#include <Adafruit_SHT4x.h>
+#include <hp_BH1750.h>
 #include <Arduino.h>
 #include <cmath>
 
@@ -67,9 +69,9 @@ private:
     AveragingValue<32> m_temperature{};
     AveragingValue<32> m_humidity{};
     AveragingValue<32> m_light{};
-
 #ifndef WOKWI
-    // TODO: implement hardware sensors
+    Adafruit_SHT4x m_sht4x{};
+    hp_BH1750 m_bh1750{};
 #endif
 };
 

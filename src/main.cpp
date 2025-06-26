@@ -6,6 +6,7 @@
 #include "modules/lights_controller.h"
 #include "modules/ui_display_manager.h"
 #include "modules/sensor_manager.h"
+#include "modules/audio_controller.h"
 #include "event_definitions.h"
 #include "log.h"
 #include "matrix_font.h"
@@ -51,6 +52,9 @@ static void matrix_hum(char* buf, size_t size);
 [[maybe_unused]] static LightsController lights{
     {.pin = pins::lights, .resolution = 13, .freq = 5000, .fade_time = 250, .gamma = 2.2f}
 };
+
+// Boot #X
+[[maybe_unused]] static AudioController audio{pins::i2s_data, pins::i2s_bck, pins::i2s_lrc};
 
 
 static uint8_t nvv_tmp[16]{};
