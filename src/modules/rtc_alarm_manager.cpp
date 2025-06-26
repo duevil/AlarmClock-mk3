@@ -76,6 +76,14 @@ NVV<String>& RtcAlarmManager::timezone()
     return m_timezone;
 }
 
+float RtcAlarmManager::temperature()
+{
+    auto temp = m_rtc.temp();
+    return temp == URTCLIB_TEMP_ERROR
+               ? NAN
+               : static_cast<float>(temp) / 100.f;
+}
+
 void RtcAlarmManager::runBootProcess()
 {
     set_internal_rtc_from_compile_datetime();

@@ -45,7 +45,13 @@ public:
      * Get an accessor the system timezone represented as POSIX TZ string
      * @return Reference to the timezone value
      */
-    [[nodiscard]] NVV<String> &timezone();
+    [[nodiscard]] NVV<String>& timezone();
+
+    /**
+     * Get the temperature of the external RTC chip
+     * @return The temperature of the external RTC chip in °C
+     */
+    [[nodiscard]] float temperature();
 
     // delete copy constructor and assignment operator
 

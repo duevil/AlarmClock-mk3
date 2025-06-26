@@ -10,7 +10,7 @@
 #include "util/timer.h"
 
 
-class UiDisplayManager final : BootProcess, Thread<4096>
+class UiDisplayManager final : BootProcess, Thread<>
 {
 public:
     UiDisplayManager(uint8_t pin_cs, uint8_t pin_dc, uint8_t pin_rst,

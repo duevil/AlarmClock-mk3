@@ -1,6 +1,11 @@
 #include "lights_controller.h"
 
 
+LightsController::LightsController(const Config& cfg)
+    : BootProcess("Lights initialized"),
+      Thread({.name = "lights", .priority = 5, .coreId = APP_CPU_NUM}),
+      m_cfg(cfg) {}
+
 void LightsController::max()
 {
     m_target = (1LU << m_cfg.resolution) - 1;

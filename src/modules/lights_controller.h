@@ -24,9 +24,7 @@ public:
         float gamma;
     };
 
-    explicit LightsController(Config cfg) : BootProcess("Lights initialized"),
-                                   Thread({.name = "lights", .priority = 5, .coreId = APP_CPU_NUM}),
-                                   m_cfg(cfg) {}
+    explicit LightsController(const Config &cfg);
 
     /**
      * Set the lights to their maximum brightness

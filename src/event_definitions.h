@@ -54,4 +54,18 @@ enum INPUT_EVENT_ID
 };
 
 
+//! Sensor events
+EVENT_DEFINE(SENSOR_EVENT);
+
+enum SENSOR_EVENT_ID
+{
+    //! The temperature sensor has a new value, included in the event data
+    TEMPERATURE,
+    //! The humidity sensor has a new value, included in the event data
+    HUMIDITY,
+    //! The light sensor has a new value, included in the event data
+    LIGHT,
+};
+
+
 #endif //EVENT_DEFINITIONS_H

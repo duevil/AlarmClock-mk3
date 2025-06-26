@@ -5,6 +5,7 @@
 #include "modules/rtc_alarm_manager.h"
 #include "modules/lights_controller.h"
 #include "modules/ui_display_manager.h"
+#include "modules/sensor_manager.h"
 #include "event_definitions.h"
 #include "log.h"
 #include "matrix_font.h"
@@ -19,60 +20,36 @@
 
 
 // Boot #1
-static class : BootProcess
+[[maybe_unused]] static struct : private BootProcess
 {
     void runBootProcess() override { NVS::begin("alarm_clock"); }
     using BootProcess::BootProcess;
 }
-nvs_boot [[maybe_unused]]{"NVS initialized"};
+nvs_boot{"NVS initialized"};
 
 // Boot #2
-static RtcAlarmManager rtc;
+[[maybe_unused]] static RtcAlarmManager rtc{};
+
+
+static void matrix_time(char* buf, size_t size);
+static void matrix_date(char* buf, size_t size);
+static void matrix_temp(char* buf, size_t size);
+static void matrix_hum(char* buf, size_t size);
 
 // Boot #3
-static InputHandler input_handler [[maybe_unused]]{
+[[maybe_unused]] static MatrixController matrix{pins::matrix_cs, matrix_time, matrix_date, matrix_temp, matrix_hum};
+
+// Boot #4
+[[maybe_unused]] static SensorManager sensors{};
+
+// Boot #5
+[[maybe_unused]] static InputHandler inputs{
     pins::button_left, pins::button_middle, pins::button_right
 };
 
-// Boot #4
-static LightsController lights{
+// Boot #6
+[[maybe_unused]] static LightsController lights{
     {.pin = pins::lights, .resolution = 13, .freq = 5000, .fade_time = 250, .gamma = 2.2f}
-};
-
-// Boot #5
-static MatrixController matrix{
-    pins::matrix_cs,
-    [](char* buf, size_t size)
-    {
-        auto now = time(nullptr);
-        tm tm{};
-        localtime_r(&now, &tm);
-        if (!rtc.anyAlarmTriggered())
-        {
-            strftime(buf, size, "%R %S", &tm);
-            // seconds are at index 6 and 7
-            matrix_font_to_subscript(buf[6]);
-            matrix_font_to_subscript(buf[7]);
-        }
-        else
-        {
-            const char* fmt;
-            if (auto ms = millis() % 1000; ms < 250)
-                fmt = "%R $   ";
-            else if (ms < 500 || ms >= 750)
-                fmt = "%R  #  ";
-            else
-                fmt = "%R   $ ";
-            strftime(buf, size, fmt, &tm);
-        }
-    },
-    [](char* buf, size_t size)
-    {
-        auto now = time(nullptr);
-        tm tm{};
-        localtime_r(&now, &tm);
-        strftime(buf, size, "%d. %b", &tm);
-    }
 };
 
 
@@ -84,7 +61,7 @@ static uint8_t nvv_tmp[16]{};
     else if ((msg == MUIF_MSG_CURSOR_SELECT || msg == MUIF_MSG_VALUE_INCREMENT || msg == MUIF_MSG_VALUE_DECREMENT) \
     && !ui->is_mud) nvv = *value; return res; }
 
-// Boot #6
+// Boot #7
 static UiDisplayManager ui{
     pins::ui_display_cs, pins::ui_display_dc, pins::ui_display_rst,
     MUI_FORM(1)
@@ -170,6 +147,27 @@ void setup()
         else
             lights.set((lights.currentValue() + 5) % 105);
     };
+    SENSOR_EVENT >> LIGHT >> [](const Event_t& e)
+    {
+        auto lux = e.data<float>();
+        if (lux < 0.001)
+        {
+            matrix.shutdown(true);
+            return;
+        }
+
+        // Logarithmic normalization
+        constexpr float log_min = log10(1.f);
+        constexpr float log_max = log10(10000.f);
+        auto log_lux = log10(lux);
+        auto norm = min(max(0.f, (log_lux - log_min) / (log_max - log_min)), 1.f); // Normalize to 0.0-1.0
+
+        // Scale to brightness range
+        auto brightness = lround(norm * 15.0 + 0.5); // Round to the nearest int
+        matrix.shutdown(false);
+        matrix.setBrightness(brightness);
+        LOG_T("matrix brightness set to %d (for %f)", brightness, lux);
+    };
 
 
     BootProcess::runAll();
@@ -188,4 +186,48 @@ void setup()
 void loop()
 {
     delay(1000);
+}
+
+
+static void matrix_time(char* buf, size_t size)
+{
+    auto now = time(nullptr);
+    tm tm{};
+    localtime_r(&now, &tm);
+    if (!rtc.anyAlarmTriggered())
+    {
+        strftime(buf, size, "%R %S", &tm);
+        // seconds are at index 6 and 7
+        matrix_font_to_subscript(buf[6]);
+        matrix_font_to_subscript(buf[7]);
+    }
+    else
+    {
+        const char* fmt;
+        if (auto ms = millis() % 1000; ms < 250)
+            fmt = "%R $   ";
+        else if (ms < 500 || ms >= 750)
+            fmt = "%R  #  ";
+        else
+            fmt = "%R   $ ";
+        strftime(buf, size, fmt, &tm);
+    }
+}
+
+static void matrix_date(char* buf, size_t size)
+{
+    auto now = time(nullptr);
+    tm tm{};
+    localtime_r(&now, &tm);
+    strftime(buf, size, "%d. %b", &tm);
+}
+
+static void matrix_temp(char* buf, size_t size)
+{
+    snprintf(buf, size, "%02.1f \xB0 C", sensors.temperature());
+}
+
+static void matrix_hum(char* buf, size_t size)
+{
+    snprintf(buf, size, "%02.1f %%", sensors.humidity());
 }

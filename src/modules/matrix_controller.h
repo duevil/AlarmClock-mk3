@@ -10,7 +10,7 @@
 /**
  * @brief A class for controlling a 32x8 LED matrix display using the MD_Parola library.
  */
-class MatrixController final : BootProcess, Thread<1792>
+class MatrixController final : BootProcess, Thread<>
 {
 public:
     /**
