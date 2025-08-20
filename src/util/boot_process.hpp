@@ -18,7 +18,7 @@ EVENT_DEFINE(BOOT_EVENT);
  *
  * Each boot process is assigned a description string, which can be queried using the process id.
  *
- * Classes implementing a boot process must implement the <code>run()</code> method.
+ * Classes implementing a boot process must implement the <code>runBootProcess()</code> method.
  *
  * @note The internal list does not store a copy of the registered process uses
  * but instead uses a pointer to the processes, so the user must ensure that each process is still

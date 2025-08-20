@@ -84,17 +84,16 @@ Stream* AudioController::AudioSource::selectStream(const char* path)
         return &default_mp3;
     }
 
-    if (path != file_loop.file().path())
+    if (strcmp(path, file_loop.file().path()) == 0)
     {
         if (auto file = SD.open(path))
         {
             file_loop.setFile(file);
-            file_loop.begin();
-            return &file_loop;
         }
     }
 
-    return nullptr;
+    file_loop.begin();
+    return &file_loop;
 }
 
 void AudioController::AudioSource::setLoop(bool loop)

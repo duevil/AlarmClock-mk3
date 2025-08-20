@@ -3,8 +3,7 @@
 
 bool Timer::detached(uint16_t seconds, const callback_t& callback)
 {
-    auto timer = xTimerCreate(nullptr, pdMS_TO_TICKS(seconds * 1000), pdFALSE, reinterpret_cast<void*>(true),
-                              s_callback);
+    auto timer = xTimerCreate(nullptr, pdMS_TO_TICKS(seconds * 1000), pdFALSE, nullptr, s_callback);
     s_callbacks.try_emplace(timer, callback);
     if (timer)
     {

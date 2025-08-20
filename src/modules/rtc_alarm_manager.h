@@ -12,6 +12,7 @@
 
 /**
  * Class for managing the internal and external RTC and alarms
+ * @note The external RTC stores the time as UTC
  */
 class RtcAlarmManager final : BootProcess
 {
@@ -128,7 +129,7 @@ private:
         "a1repeat",
         "a1sound",
         "a1enabled",
-        *this, 1
+        *this, URTCLIB_ALARM_1
     };
     Alarm m_alarm_2{
         "a2hour",
@@ -136,11 +137,11 @@ private:
         "a2repeat",
         "a2sound",
         "a2enabled",
-        *this, 2
+        *this, URTCLIB_ALARM_2
     };
     Timer m_update_timer;
     Timer m_deactivate_timer;
-    NVV<String> m_timezone{"timezone"};
+    NVV<String> m_timezone{"timezone", "UTC"};
 };
 
 

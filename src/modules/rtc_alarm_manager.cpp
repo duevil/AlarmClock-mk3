@@ -6,6 +6,13 @@
 #include "pin_map.h"
 
 
+inline void set_timezone(const char* tz)
+{
+    setenv("TZ", tz, 1);
+    tzset();
+}
+
+
 RtcAlarmManager::RtcAlarmManager(): BootProcess("Rtc initialized") {}
 
 bool RtcAlarmManager::anyAlarmTriggered()
@@ -15,10 +22,9 @@ bool RtcAlarmManager::anyAlarmTriggered()
 
 void RtcAlarmManager::setInternalFromExternal()
 {
-    m_rtc.refresh();
-    if (m_rtc.year() == 0)
+    if (!m_rtc.refresh() || m_rtc.year() == 0)
     {
-        LOG_W("External RTC probably not set, skipping update");
+        LOG_W("External rtc probably not set, skipping update");
         return;
     }
     tm tm{
@@ -28,14 +34,20 @@ void RtcAlarmManager::setInternalFromExternal()
         .tm_mday = m_rtc.day(),
         .tm_mon = m_rtc.month() - 1,
         .tm_year = m_rtc.year() + 100,
+        .tm_isdst = 0,
     };
 
     char buf[32];
     strftime(buf, sizeof(buf), "%FT%TZ", &tm);
     LOG_D("External rtc dt: %s", buf);
 
+    // as mktime interprets the time as being local but the external RTC time is UTC,
+    // we temporarily set the system timezone to UTC
+    set_timezone("UTC");
     timeval tv{.tv_sec = mktime(&tm)};
+    set_timezone(m_timezone->c_str());
     settimeofday(&tv, nullptr);
+
     auto now = time(nullptr);
     gmtime_r(&now, &tm);
     strftime(buf, sizeof(buf), "%FT%TZ", &tm);
@@ -57,8 +69,8 @@ void RtcAlarmManager::setExternalFromInternal()
     strftime(buf, sizeof(buf), "%FT%TZ", &tm);
     LOG_D("Internal rtc dt: %s", buf);
 
-    m_rtc.refresh();
     m_rtc.set(tm.tm_sec, tm.tm_min, tm.tm_hour, tm.tm_wday + 1, tm.tm_mday, tm.tm_mon + 1, tm.tm_year - 100);
+    m_rtc.refresh();
     tm = {
         .tm_sec = m_rtc.second(),
         .tm_min = m_rtc.minute(),
@@ -86,25 +98,28 @@ float RtcAlarmManager::temperature()
 
 void RtcAlarmManager::runBootProcess()
 {
-    set_internal_rtc_from_compile_datetime();
-
+    // initialize timezone
 
     auto&& set_timezone = [](const String& tz)
     {
         LOG_I("System timezone set to: %s", tz.c_str());
-        setenv("TZ", tz.c_str(), 1);
-        tzset();
+        ::set_timezone(tz.c_str());
     };
     m_timezone.observe(set_timezone);
-    if (*m_timezone)
+    if (!m_timezone->isEmpty())
         set_timezone(*m_timezone);
 
+
+    set_internal_rtc_from_compile_datetime();
+
+
+    // initialize external RTC
 
     Wire.begin();
 #ifdef WOKWI
     m_rtc.set_model(URTCLIB_MODEL_DS1307);
 #else
-        m_rtc.set_model(URTCLIB_MODEL_DS3231);
+    m_rtc.set_model(URTCLIB_MODEL_DS3231);
 #endif
     m_rtc.set_12hour_mode(false);
     m_rtc.refresh();
@@ -121,12 +136,17 @@ void RtcAlarmManager::runBootProcess()
     setInternalFromExternal();
 
 
+    // initialize interrupt
+
     pinMode(pins::alarm_interrupt, INPUT);
     attachInterrupt(pins::alarm_interrupt, alarmISR, FALLING);
 
 
+    // register event listeners
+
     ALARM_EVENT >> TRIGGERED_ANY >> [this](auto)
     {
+        // we only refresh RTC data on trigger besides the regular time updates
         m_rtc.refresh();
 
         if (m_rtc.alarmTriggered(URTCLIB_ALARM_1))
@@ -182,12 +202,18 @@ void RtcAlarmManager::runBootProcess()
     };
 
 
+    // stop alarm after 3 minutes
     m_deactivate_timer.once(1800, [] { ALARM_EVENT << DEACTIVATE; });
+    // update internal RTC from external every hour
     m_update_timer.always(3600, [this] { setInternalFromExternal(); });
 
 
     m_alarm_1.set();
     m_alarm_2.set();
+
+    setInternalFromExternal();
+    setExternalFromInternal();
+    setInternalFromExternal();
 }
 
 void RtcAlarmManager::alarmISR()
@@ -197,16 +223,21 @@ void RtcAlarmManager::alarmISR()
 
 void RtcAlarmManager::Alarm::setIn8h()
 {
-    tm tm{};
+    // get the current timestamp, add 8 hours and convert it to a tm value
     auto t = time(nullptr);
     t += 8 * 60 * 60;
+    tm tm{};
     gmtime_r(&t, &tm);
 
+    // we edit the NVVs, which would trigger recomputation with every assignment,
+    // so we temporarily halt recomputing the next ring time
     m_no_compute = true;
 
     hour = tm.tm_hour;
     minute = tm.tm_min;
 
+    // if the alarm is set to repeat,
+    // ensure that alarm time's week day is set
     if (*repeat)
         repeat = *repeat | 1 << tm.tm_wday;
 
@@ -262,37 +293,41 @@ RtcAlarmManager::Alarm::Alarm(const char* key_hour, const char* key_minute, cons
     });
 }
 
+// set the RTC to trigger its alarm at the given time
 void RtcAlarmManager::Alarm::setAt(const time_t& t) const
 {
+    // convert the timestamp to a tm value
     tm tm{};
     gmtime_r(&t, &tm);
 
-    if (m_id == 1)
-        m_mgr.m_rtc.alarmSet(URTCLIB_ALARM_TYPE_1_FIXED_DHMS, tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_mday);
-    else if (m_id == 2)
-        m_mgr.m_rtc.alarmSet(URTCLIB_ALARM_TYPE_2_FIXED_DHM, tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_mday);
+    // the 8th bit is the alarm id, the macro sets only the 6th bit for the alarm mode
+    m_mgr.m_rtc.alarmSet(m_id | URTCLIB_ALARM_TYPE_1_FIXED_DHMS, tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_mday);
     char buf[32];
     strftime(buf, sizeof(buf), "%FT%TZ", &tm);
-    LOG_I("Alarm #%u set at %s", m_id, buf);
+    LOG_I("Alarm #%u set at %s", (m_id >> 7) + 1, buf);
 }
 
+// either set the alarm at it's next ring time
+// or disable the RTC's alarm if the alarm is disabled
 void RtcAlarmManager::Alarm::set()
 {
     if (*enabled)
         setAt(m_next);
-    else if (m_id == 1)
-        m_mgr.m_rtc.alarmDisable(URTCLIB_ALARM_1);
-    else if (m_id == 2)
-        m_mgr.m_rtc.alarmDisable(URTCLIB_ALARM_2);
+    else
+        m_mgr.m_rtc.alarmDisable(m_id);
 }
 
+// if computation is allowed and the alarm is enabled,
+// compute the next ring time and set the alarm
 void RtcAlarmManager::Alarm::computeNextAndSet()
 {
     if (m_no_compute || !*enabled) return;
 
+    // get the current time and convert it to a tm value
     auto now = time(nullptr);
     tm tm{};
     gmtime_r(&now, &tm);
+
     int days_increment = 0;
 
     // if the current time is already in the past, add one day

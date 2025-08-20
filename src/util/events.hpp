@@ -108,7 +108,6 @@ namespace events
         };
 
         std::unique_ptr<BaseData> m_data = std::make_unique<EmptyData>();
-        int m_int = 0;
         bool m_isr = false;
     };
 
@@ -127,8 +126,8 @@ namespace events
 
         auto& operator>>(const handler_t& handler) const
         {
-            auto& hi = *s_handlerInstances.emplace(std::make_unique<Instance>(nullptr, handler)).first;
-            auto handler_arg = const_cast<void*>(static_cast<const void*>(&hi));
+            auto& hi = *s_handler_instances.emplace(std::make_unique<Instance>(nullptr, handler)).first;
+            auto handler_arg = static_cast<void*>(hi.get());
             auto err = esp_event_handler_instance_register(m_base, m_id, s_handler, handler_arg, &hi->esp_instance);
             ESP_ERROR_CHECK(err);
             return hi;
@@ -137,23 +136,22 @@ namespace events
         void unregister(const InstancePtr& instance) const
         {
             ESP_ERROR_CHECK(esp_event_handler_instance_unregister(m_base, m_id, instance->esp_instance));
-            if (auto it = s_handlerInstances.find(instance); it != s_handlerInstances.end())
+            if (auto it = s_handler_instances.find(instance); it != s_handler_instances.end())
             {
-                s_handlerInstances.erase(it);
+                s_handler_instances.erase(it);
             }
         }
 
     private:
-        inline static std::unordered_set<InstancePtr> s_handlerInstances{};
+        inline static std::unordered_set<InstancePtr> s_handler_instances{};
 
         static void s_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* data)
         {
             if (handler_arg != nullptr)
             {
-                auto& hi = *static_cast<const InstancePtr*>(handler_arg);
-                if (auto it = s_handlerInstances.find(hi); it != s_handlerInstances.end() && (*it)->handler)
+                if (auto* instance = static_cast<Instance*>(handler_arg); instance->handler)
                 {
-                    (*it)->handler({base, id, data});
+                    instance->handler({base, id, data});
                 }
             }
         }

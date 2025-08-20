@@ -7,8 +7,9 @@
 
 /**
  * Class for handling input events; observes button interactions and emits either
- * <code>CLICK_[LEFT|MIDDLE|RIGHT]</code>, <code>LONG_PRESS_[LEFT|MIDDLE|RIGHT]</code>
- * or <code>LONG_RELEASE_[LEFT|MIDDLE|RIGHT]</code>
+ * <code>CLICK_[LEFT|MIDDLE|RIGHT]</code> for all buttons,
+ * <code>LONG_PRESS_MIDDLE</code> when long pressing the middle button
+ * or <code>REPEATING_[LEFT|RIGHT]</code> repeatedly when holding the left or right button
  */
 class InputHandler final : BootProcess
 {

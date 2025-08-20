@@ -7,9 +7,9 @@ struct PinTypeHelper
     gpio_num_t pin;
 
     // ReSharper disable once CppNonExplicitConversionOperator
-    constexpr operator gpio_num_t() const { return pin; }; // NOLINT(*-explicit-constructor)
+    constexpr operator gpio_num_t() const { return pin; } // NOLINT(*-explicit-constructor)
     // ReSharper disable once CppNonExplicitConversionOperator
-    constexpr operator uint8_t() const { return pin; }; // NOLINT(*-explicit-constructor)
+    constexpr operator uint8_t() const { return pin; } // NOLINT(*-explicit-constructor)
 };
 
 
@@ -23,7 +23,11 @@ namespace pins
     MAP_PIN(34, alarm_interrupt)
     MAP_PIN(36, button_left)
     MAP_PIN(39, button_middle)
+#ifdef WOKWI
     MAP_PIN(35, button_right)
+#else
+    MAP_PIN(37, button_right)
+#endif
     MAP_PIN(8, ui_display_cs);
     MAP_PIN(7, ui_display_dc);
     MAP_PIN(4, ui_display_rst);

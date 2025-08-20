@@ -57,13 +57,35 @@ static void matrix_hum(char* buf, size_t size);
 [[maybe_unused]] static AudioController audio{pins::i2s_data, pins::i2s_bck, pins::i2s_lrc};
 
 
-static uint8_t nvv_tmp[16]{};
-#define NVV_TMP(i) &nvv_tmp[i % 16]
+constexpr auto c_nvv_tmp_arr_size = 16;
+/**
+ * An array for temporarily storing NVV values to be used inside the MUI
+ */
+static uint8_t nvv_tmp[c_nvv_tmp_arr_size]{};
+/**
+ * Creates a reference to a field inside the NVV temp array for the given index
+ * @param i The index of the NVV temp field
+ */
+#define NVV_TMP(i) &nvv_tmp[i % c_nvv_tmp_arr_size]
+/**
+ * Decorates a MUI function to write the value of the function's primitive pointer to a NVV;
+ * implemented as a macro due to the need of passing arguments into a lambda
+ * which will be stored as a function pointer and thus doesn't allow captures
+ * @param base The base MUI function to decorate
+ * @param nvv The NVV to edit
+ */
 #define NVV_EDIT(base, nvv) [](mui_t* ui, uint8_t msg) { \
-    auto* vmm = (mui_u8g2_u8_min_max_t *)muif_get_data(ui->uif); auto* value = mui_u8g2_u8mm_get_valptr(vmm); \
-    auto res = base(ui, msg); if (msg == MUIF_MSG_FORM_START) *value = *nvv;\
-    else if ((msg == MUIF_MSG_CURSOR_SELECT || msg == MUIF_MSG_VALUE_INCREMENT || msg == MUIF_MSG_VALUE_DECREMENT) \
-    && !ui->is_mud) nvv = *value; return res; }
+    auto* vmm = (mui_u8g2_u8_min_max_t *)muif_get_data(ui->uif); \
+    auto* value = mui_u8g2_u8mm_get_valptr(vmm); \
+    auto res = base(ui, msg); \
+    if (msg == MUIF_MSG_FORM_START) \
+        *value = *nvv; \
+    else if ((msg == MUIF_MSG_CURSOR_SELECT || \
+              msg == MUIF_MSG_VALUE_INCREMENT || \
+              msg == MUIF_MSG_VALUE_DECREMENT) && !ui->is_mud) \
+        nvv = *value; \
+    return res; \
+}
 
 // Boot #7
 static UiDisplayManager ui{
@@ -95,6 +117,8 @@ void setup()
 
     events::init();
     DEBUG_ONLY(events::GLOBAL >> [](const Event_t& e) { LOG_D("Event posted: %s #%d", e.base, e.id); });
+
+    // Register event listeners
 
     BOOT_EVENT >> [](const Event_t& e)
     {
@@ -193,6 +217,7 @@ void loop()
 }
 
 
+//! Matrix tab to display the current time and, if required, an alarm animation
 static void matrix_time(char* buf, size_t size)
 {
     auto now = time(nullptr);
@@ -218,6 +243,7 @@ static void matrix_time(char* buf, size_t size)
     }
 }
 
+//! Matrix tab to display the current date
 static void matrix_date(char* buf, size_t size)
 {
     auto now = time(nullptr);
@@ -226,11 +252,13 @@ static void matrix_date(char* buf, size_t size)
     strftime(buf, size, "%d. %b", &tm);
 }
 
+//! Matrix tab to display the current temperature
 static void matrix_temp(char* buf, size_t size)
 {
     snprintf(buf, size, "%02.1f \xB0 C", sensors.temperature());
 }
 
+//! Matrix tab to display the current humidity
 static void matrix_hum(char* buf, size_t size)
 {
     snprintf(buf, size, "%02.1f %%", sensors.humidity());
