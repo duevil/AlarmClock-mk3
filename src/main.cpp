@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SD.h>
 
 #include "modules/input_handler.h"
 #include "modules/matrix_controller.h"
@@ -7,11 +8,13 @@
 #include "modules/ui_display_manager.h"
 #include "modules/sensor_manager.h"
 #include "modules/audio_controller.h"
+#include "modules/web_service_manager.h"
 #include "event_definitions.h"
 #include "log.h"
 #include "matrix_font.h"
 #include "u8g2_fonts.h"
 #include "pin_map.h"
+#include <utility>
 
 #ifdef ENV_DEBUG
 #define DEBUG_ONLY(x) x
@@ -106,6 +109,22 @@ static UiDisplayManager ui{
                              NVV_EDIT(mui_u8g2_u8_min_max_wm_mud_pi, rtc.alarm1.hour)),
         MUIF_LABEL(mui_u8g2_draw_text)
     }
+};
+
+
+int x{};
+using namespace endpoint;
+[[maybe_unused]] static WebServiceManager services{
+    80,
+    Endpoint::at("/").get([](Request& r) { r.text() = "Hello World!"; }),
+    Endpoint::at("/foo").post([](AsyncWebServerRequest* request)
+    {
+        request->send(200, asyncsrv::T_text_plain, "Hello World");
+    }),
+    Endpoint::at("/bar").get(std::as_const(x)),
+    Endpoint::at("/bar").put(x),
+    Endpoint::at("/static").file("/static.html", SD),
+    Endpoint::at("/static").dir("/static/files", SD),
 };
 
 
