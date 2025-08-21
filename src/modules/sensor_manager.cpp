@@ -4,27 +4,19 @@
 #include "event_definitions.h"
 
 
-SensorManager::SensorManager() : BootProcess("Sensors initialized"), Thread({.name = "sensors"}) {}
+SensorManager::SensorManager(uint8_t ldr_pin)
+    : BootProcess("Sensors initialized"), Thread({.name = "sensors"}),
+      m_ldr_pin(ldr_pin) {}
 
-float SensorManager::temperature() const
-{
-    return m_temperature.average;
-}
+float SensorManager::temperature() const { return m_temperature; }
 
-float SensorManager::humidity() const
-{
-    return m_humidity.average;
-}
+float SensorManager::humidity() const { return m_humidity; }
 
-float SensorManager::light() const
-{
-    return m_light.average;
-}
+float SensorManager::light() const { return m_light * -15.f / 4095.f + 15.f; }
 
 void SensorManager::runBootProcess()
 {
 #ifndef WOKWI
-
     if (!m_sht4x.begin())
     {
         LOG_E("SHT4X initialization failed");
@@ -35,25 +27,15 @@ void SensorManager::runBootProcess()
         m_sht4x.setHeater(SHT4X_NO_HEATER);
         m_sht4x.startEvent();
     }
-
-    if (!m_bh1750.begin(BH1750_TO_GROUND))
-    {
-        LOG_E("SHT4X initialization failed");
-    }
-    else
-    {
-        m_bh1750.setQuality(BH1750_QUALITY_HIGH2);
-        m_bh1750.calibrateTiming();
-        m_bh1750.start();
-    }
-
 #endif
 }
 
 void SensorManager::run()
 {
-#ifndef WOKWI
+    m_light << static_cast<float>(analogRead(m_ldr_pin));
+    SENSOR_EVENT << LIGHT << light();
 
+#ifndef WOKWI
     if (m_sht4x.hasEvent())
     {
         sensors_event_t temp;
@@ -61,25 +43,20 @@ void SensorManager::run()
         m_sht4x.fillEvent(&humidity, &temp);
         m_temperature << temp.temperature;
         m_humidity << humidity.relative_humidity;
-        SENSOR_EVENT << TEMPERATURE << m_temperature.average;
-        SENSOR_EVENT << HUMIDITY << m_humidity.average;
+        SENSOR_EVENT << TEMPERATURE << m_temperature.get();
+        SENSOR_EVENT << HUMIDITY << m_humidity.get();
         m_sht4x.startEvent();
     }
-
-    if (m_bh1750.hasValue())
-    {
-        m_light << m_bh1750.getLux();
-        SENSOR_EVENT << LIGHT << m_light.average;
-        m_bh1750.start();
-    }
-
 #else
-    m_temperature << static_cast<float>(random(18, 25));
-    m_humidity << static_cast<float>(random(60, 80));
-    m_light << static_cast<float>(random(0, 10000));
-    SENSOR_EVENT << TEMPERATURE << m_temperature.average;
-    SENSOR_EVENT << HUMIDITY << m_humidity.average;
-    SENSOR_EVENT << LIGHT << m_light.average;
-    delay(1000);
+    if (static auto last = millis(); millis() - last > 1000)
+    {
+        m_temperature << static_cast<float>(random(18, 25));
+        m_humidity << static_cast<float>(random(60, 80));
+        SENSOR_EVENT << TEMPERATURE << m_temperature.get();
+        SENSOR_EVENT << HUMIDITY << m_humidity.get();
+        last = millis();
+    }
 #endif
+
+    delay(50);
 }

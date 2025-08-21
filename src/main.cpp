@@ -41,7 +41,7 @@ static void matrix_hum(char* buf, size_t size);
 [[maybe_unused]] static MatrixController matrix{pins::matrix_cs, matrix_time, matrix_date, matrix_temp, matrix_hum};
 
 // Boot #4
-[[maybe_unused]] static SensorManager sensors{};
+[[maybe_unused]] static SensorManager sensors{pins::ldr};
 
 // Boot #5
 [[maybe_unused]] static InputHandler inputs{
@@ -116,7 +116,6 @@ void setup()
 
 
     events::init();
-    DEBUG_ONLY(events::GLOBAL >> [](const Event_t& e) { LOG_D("Event posted: %s #%d", e.base, e.id); });
 
     // Register event listeners
 
@@ -177,24 +176,17 @@ void setup()
     };
     SENSOR_EVENT >> LIGHT >> [](const Event_t& e)
     {
-        auto lux = e.data<float>();
-        if (lux < 0.001)
+        if (auto light = e.data<float>(); light > 0.15)
+        {
+            auto brightness = lround(light);
+            matrix.shutdown(false);
+            matrix.setBrightness(brightness);
+            LOG_T("matrix brightness set to %d (%f)", brightness, light);
+        }
+        else
         {
             matrix.shutdown(true);
-            return;
         }
-
-        // Logarithmic normalization
-        constexpr float log_min = log10(1.f);
-        constexpr float log_max = log10(10000.f);
-        auto log_lux = log10(lux);
-        auto norm = min(max(0.f, (log_lux - log_min) / (log_max - log_min)), 1.f); // Normalize to 0.0-1.0
-
-        // Scale to brightness range
-        auto brightness = lround(norm * 15.0 + 0.5); // Round to the nearest int
-        matrix.shutdown(false);
-        matrix.setBrightness(brightness);
-        LOG_T("matrix brightness set to %d (for %f)", brightness, lux);
     };
 
 

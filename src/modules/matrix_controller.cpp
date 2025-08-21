@@ -104,7 +104,7 @@ void MatrixController::run()
         {
         case none:
             // give the processor some time to do other stuff when not animating
-            delay(10);
+            delay(50);
             break;
         case scroll_next:
             m_md.setTextEffect(PA_NO_EFFECT, PA_SCROLL_LEFT);

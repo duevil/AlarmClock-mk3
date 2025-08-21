@@ -34,6 +34,7 @@ namespace pins
     MAP_PIN(12, i2s_data);
     MAP_PIN(27, i2s_bck);
     MAP_PIN(33, i2s_lrc);
+    MAP_PIN(14, ldr);
 }
 
 

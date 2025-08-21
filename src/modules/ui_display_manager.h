@@ -3,8 +3,6 @@
 
 #include <U8g2lib.h>
 #include <MUIU8g2.h>
-#include <util/blocking_queue.hpp>
-
 #include "util/boot_process.hpp"
 #include "util/thread.hpp"
 #include "util/timer.h"
@@ -66,7 +64,6 @@ private:
     U8G2 m_display;
     MUIU8G2 m_ui{};
     Timer m_close_timer;
-    ESPQueue<10, const char*> m_custom_draws{};
 };
 
 

@@ -3,10 +3,8 @@
 
 #include "util/boot_process.hpp"
 #include "util/thread.hpp"
+#include "util/averaging_value.hpp"
 #include <Adafruit_SHT4x.h>
-#include <hp_BH1750.h>
-#include <Arduino.h>
-#include <cmath>
 
 
 /**
@@ -16,7 +14,7 @@
 class SensorManager final : BootProcess, Thread<>
 {
 public:
-    SensorManager();
+    explicit SensorManager(uint8_t ldr_pin);
 
     /**
      * Get the current average temperature in °C
@@ -37,41 +35,12 @@ private:
     void runBootProcess() override;
     void run() override;
 
-    template <size_t size>
-    struct AveragingValue : private std::array<float, size>
-    {
-        AveragingValue() : std::array<float, size>({})
-        {
-            this->fill(NAN);
-        }
-
-        AveragingValue& operator<<(float value)
-        {
-            if (!isnan(value))
-            {
-                average = 0;
-                (*this)[index] = value;
-                index = (index + 1) % size;
-                for (float f : *this)
-                {
-                    if (isnan(f)) f = value;
-                    average += f;
-                }
-                average /= size;
-            }
-            return *this;
-        }
-
-        float average = NAN;
-        size_t index = 0;
-    };
-
-    AveragingValue<32> m_temperature{};
-    AveragingValue<32> m_humidity{};
-    AveragingValue<32> m_light{};
+    uint8_t m_ldr_pin;
+    AveragingValue<float, 32> m_temperature{};
+    AveragingValue<float, 32> m_humidity{};
+    AveragingValue<float, 32> m_light{};
 #ifndef WOKWI
     Adafruit_SHT4x m_sht4x{};
-    hp_BH1750 m_bh1750{};
 #endif
 };
 
