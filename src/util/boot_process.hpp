@@ -5,6 +5,10 @@
 #include <queue>
 
 
+template<typename Func>
+struct FuncBootProcess;
+
+
 //! Event posted when a boot process completes
 EVENT_DEFINE(BOOT_EVENT);
 
@@ -68,6 +72,10 @@ struct BootProcess
 
     BootProcess(const BootProcess&) = delete;
     BootProcess& operator=(const BootProcess&) = delete;
+
+
+    template<typename T>
+    static auto call(const char *description, T func) { return FuncBootProcess<T>{description, func}; }
 
 protected:
     virtual void runBootProcess() = 0;

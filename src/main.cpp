@@ -9,6 +9,7 @@
 #include "modules/sensor_manager.h"
 #include "modules/audio_controller.h"
 #include "modules/web_service_manager.h"
+#include "modules/sound_manager.h"
 #include "event_definitions.h"
 #include "log.h"
 #include "matrix_font.h"
@@ -23,13 +24,25 @@
 #endif
 
 
+// TODO: set boot order
+
+[[maybe_unused]] static auto sd_mount = BootProcess::call(
+    "SD card mounting done",
+    []
+    {
+        if (SD.begin())
+        {
+            LOG_I("SD card mounted successfully");
+        }
+        else
+        {
+            LOG_E("SD card initialization failed");
+        }
+    }
+);
+
 // Boot #1
-[[maybe_unused]] static struct : private BootProcess
-{
-    void runBootProcess() override { NVS::begin("alarm_clock"); }
-    using BootProcess::BootProcess;
-}
-nvs_boot{"NVS initialized"};
+[[maybe_unused]] static auto nvs_boot = BootProcess::call("NVS initialized", [] { NVS::begin("alarm_clock"); });
 
 // Boot #2
 [[maybe_unused]] static RtcAlarmManager rtc{};
@@ -126,6 +139,9 @@ using namespace endpoint;
     Endpoint::at("/static").file("/static.html", SD),
     Endpoint::at("/static").dir("/static/files", SD),
 };
+
+
+[[maybe_unused]] static SoundManager sounds{"/sounds.json"};
 
 
 void setup()
